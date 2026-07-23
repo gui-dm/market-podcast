@@ -23,11 +23,9 @@ DOCS = ROOT / "docs"
 EPISODES = DOCS / "episodes"
 TZ = ZoneInfo("America/Sao_Paulo")
 
-ASSETS = {
+COMMON_ASSETS = {
     "Ibovespa": "^BVSP",
     "Dólar": "BRL=X",
-    "S&P 500": "^GSPC",
-    "Nasdaq": "^IXIC",
     "Treasury de 10 anos": "^TNX",
     "Petróleo Brent": "BZ=F",
     "Ouro": "GC=F",
@@ -36,10 +34,35 @@ ASSETS = {
     "Petrobras": "PETR4.SA"
 }
 
+OPENING_ASSETS = {
+    "Futuro do S&P 500": "ES=F",
+    "Futuro do Nasdaq": "NQ=F"
+}
+
+CLOSING_ASSETS = {
+    "S&P 500": "^GSPC",
+    "Nasdaq": "^IXIC"
+}
+
 NEWS_FEEDS = [
-    "https://news.google.com/rss/search?q=mercados+financeiros+Brasil&hl=pt-BR&gl=BR&ceid=BR:pt-419",
-    "https://news.google.com/rss/search?q=global+markets+Federal+Reserve+oil&hl=pt-BR&gl=BR&ceid=BR:pt-419"
+    "https://news.google.com/rss/search?q=Ibovespa+dólar+juros+mercado+when:1d&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+    "https://news.google.com/rss/search?q=global+markets+Federal+Reserve+Treasury+oil+when:1d&hl=pt-BR&gl=BR&ceid=BR:pt-419"
 ]
+
+NEWS_TERMS = {
+    "ibovespa", "dólar", "juros", "selic", "inflação", "mercado", "bolsa",
+    "fed", "federal reserve", "treasury", "petróleo", "brent", "ouro",
+    "vale", "petrobras", "china", "tarifa", "nasdaq", "s&p"
+}
+
+SPOKEN_LABELS = {
+    "S&P 500": "Ésse e Pê quinhentos",
+    "Futuro do S&P 500": "Futuro do Ésse e Pê quinhentos",
+    "Nasdaq": "Náz-dac",
+    "Futuro do Nasdaq": "Futuro do Náz-dac",
+    "Treasury de 10 anos": "Juro do título americano de dez anos",
+    "Petróleo Brent": "Petróleo Brênt"
+}
 
 
 def safe_number(value):
@@ -50,11 +73,12 @@ def safe_number(value):
         return None
 
 
-def market_snapshot():
+def market_snapshot(edition):
     result = {}
-    for label, ticker in ASSETS.items():
+    assets = COMMON_ASSETS | (OPENING_ASSETS if edition == "abertura" else CLOSING_ASSETS)
+    for label, ticker in assets.items():
         try:
-            hist = yf.Ticker(ticker).history(period="5d", interval="1d", auto_adjust=False)
+            hist = yf.Ticker(ticker).history(period="7d", interval="1d", auto_adjust=False)
             closes = [safe_number(v) for v in hist["Close"].tolist()]
             closes = [v for v in closes if v is not None]
             if not closes:
@@ -62,7 +86,9 @@ def market_snapshot():
             last = closes[-1]
             previous = closes[-2] if len(closes) > 1 else last
             change = ((last / previous) - 1) * 100 if previous else 0
-            result[label] = {"value": last, "change": change, "ticker": ticker}
+            timestamp = hist.index[-1]
+            reference_date = timestamp.strftime("%d/%m") if hasattr(timestamp, "strftime") else ""
+            result[label] = {"value": last, "change": change, "previous": previous, "ticker": ticker, "reference_date": reference_date}
         except Exception as exc:
             result[label] = {"value": None, "change": None, "ticker": ticker, "error": str(exc)}
     return result
@@ -78,14 +104,17 @@ def selic():
         return None
 
 
-def headlines(limit=5):
+def headlines(limit=4):
     items = []
     for url in NEWS_FEEDS:
         try:
             parsed = feedparser.parse(url)
             for entry in parsed.entries[:limit]:
-                title = re.sub(r"\s+-\s+[^-]+$", "", entry.title).strip()
-                if title and title not in items:
+                title = re.sub(r"\s+-\s+[^-]+$", "", entry.title).strip(" .")
+                normalized = title.casefold()
+                relevant = sum(term in normalized for term in NEWS_TERMS)
+                noisy = any(term in normalized for term in ("como funciona", "saiba como", "guia", "portal nacional"))
+                if title and relevant >= 1 and not noisy and title not in items:
                     items.append(title)
         except Exception:
             continue
@@ -109,11 +138,20 @@ def direction(change):
     return "praticamente estável"
 
 
-def spoken_asset(label, item):
+def spoken_asset(label, item, edition):
+    spoken_label = SPOKEN_LABELS.get(label, label)
     if item["value"] is None:
-        return f"A cotação de {label} não estava disponível na coleta."
+        return f"A cotação de {spoken_label} não estava disponível na coleta."
+    reference = "cotação mais recente" if edition == "abertura" and ("Futuro" in label or label in {"Dólar", "Petróleo Brent", "Ouro"}) else "último fechamento disponível"
+    if label == "Dólar":
+        value = br_number(item["value"], 4)
+        return f"Dólar contra o real: {value}; {direction(item['change'])}, na {reference}."
+    if label == "Treasury de 10 anos":
+        bps = (item["value"] - item["previous"]) * 100
+        move = f"alta de {br_number(abs(bps), 1)} pontos-base" if bps > 0.05 else f"queda de {br_number(abs(bps), 1)} pontos-base" if bps < -0.05 else "estabilidade"
+        return f"{spoken_label}: yield de {br_number(item['value'], 3)} por cento ao ano, com {move} sobre o fechamento anterior."
     value = br_number(item["value"])
-    return f"{label}: {value}; {direction(item['change'])}."
+    return f"{spoken_label}: {value}; {direction(item['change'])}, no {reference}."
 
 
 def build_script(edition, snapshot, selic_value, news, now):
@@ -123,12 +161,13 @@ def build_script(edition, snapshot, selic_value, news, now):
         if opening else
         f"Boa noite. Este é o Market Brief Brasil, edição de fechamento de {now:%d/%m/%Y}."
     )
-    parts = [intro, "Vamos aos principais números disponíveis no horário desta gravação."]
-    order = ["Ibovespa", "Dólar", "S&P 500", "Nasdaq", "Treasury de 10 anos", "Petróleo Brent", "Ouro", "Minério de ferro"]
-    parts.extend(spoken_asset(label, snapshot[label]) for label in order)
+    parts = [intro, f"Horário de referência: {now:%H:%M}, em São Paulo. Vamos aos principais números disponíveis."]
+    equity_labels = ["Futuro do S&P 500", "Futuro do Nasdaq"] if opening else ["S&P 500", "Nasdaq"]
+    order = ["Ibovespa", "Dólar", *equity_labels, "Treasury de 10 anos", "Petróleo Brent", "Ouro", "Minério de ferro"]
+    parts.extend(spoken_asset(label, snapshot[label], edition) for label in order)
     if selic_value is not None:
         parts.append(f"A taxa de referência consultada no Banco Central está em {br_number(selic_value)} por cento ao ano.")
-    winners = [(k, v["change"]) for k, v in snapshot.items() if v["change"] is not None]
+    winners = [(k, v["change"]) for k, v in snapshot.items() if v["change"] is not None and k != "Treasury de 10 anos"]
     winners.sort(key=lambda x: x[1], reverse=True)
     if winners:
         top, change = winners[0]
@@ -137,10 +176,14 @@ def build_script(edition, snapshot, selic_value, news, now):
         if bottom_change < 0:
             parts.append(f"Na ponta negativa, {bottom} recuou {br_number(abs(bottom_change))} por cento.")
     if news:
-        parts.append("No noticiário, estes são os temas que merecem acompanhamento.")
+        parts.append("No noticiário das últimas vinte e quatro horas, estes são os temas que merecem acompanhamento. As manchetes são uma triagem inicial e devem ser confirmadas nas fontes originais.")
         parts.extend(f"{idx}. {headline}." for idx, headline in enumerate(news, 1))
     if opening:
-        parts.append("Ao longo do dia, observe a reação do câmbio, da curva de juros e das ações ligadas a commodities. Compare sempre dados intradiários com referências do mesmo horário.")
+        global_risk = snapshot.get("Treasury de 10 anos", {}).get("value")
+        brent_change = snapshot.get("Petróleo Brent", {}).get("change")
+        if global_risk and brent_change is not None:
+            parts.append(f"A leitura cruzada mostra o juro americano em {br_number(global_risk, 3)} por cento e o Brent {direction(brent_change)}. Essa combinação pode influenciar inflação, câmbio e ações ligadas a commodities durante o pregão.")
+        parts.append("Ao longo do dia, observe a reação do câmbio, da curva de juros e das ações ligadas a commodities. Os índices brasileiros citados antes da abertura representam o último fechamento, enquanto futuros e ativos globais podem estar em negociação.")
     else:
         parts.append("Para o próximo pregão, acompanhe a continuidade dos movimentos em juros, câmbio e commodities, além de novos dados econômicos e resultados corporativos.")
     parts.append("As informações têm finalidade informativa e não representam recomendação de investimento.")
@@ -209,7 +252,7 @@ def main():
     now = datetime.now(TZ)
     EPISODES.mkdir(parents=True, exist_ok=True)
     ensure_cover()
-    snapshot = market_snapshot()
+    snapshot = market_snapshot(args.edition)
     script = build_script(args.edition, snapshot, selic(), headlines(), now)
     slug = f"{now:%Y-%m-%d}-{args.edition}"
     audio_path = EPISODES / f"{slug}.mp3"
@@ -232,4 +275,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
