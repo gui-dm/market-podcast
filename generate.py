@@ -4,6 +4,7 @@ import argparse
 import asyncio
 import json
 import math
+import os
 import re
 import uuid
 from datetime import datetime, timezone
@@ -126,7 +127,7 @@ def headline_has_bad_fx_reference(title, usd_value):
     return False
 
 
-def headlines(limit=4, usd_value=None):
+def headlines(limit=8, usd_value=None):
     items = []
     for url in NEWS_FEEDS:
         try:
@@ -143,6 +144,81 @@ def headlines(limit=4, usd_value=None):
         except Exception:
             continue
     return items[:limit]
+
+
+def editorial_script(edition, snapshot, selic_value, news, now, fallback):
+    """Transforma dados e manchetes em roteiro editorial, preservando um fallback local."""
+    api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    if not api_key:
+        print("GEMINI_API_KEY ausente; usando roteiro determinístico.")
+        return fallback
+
+    opening = edition == "abertura"
+    objective = (
+        "Priorize de três a cinco destaques capazes de influenciar o pregão: exterior, "
+        "agenda econômica, juros, câmbio, commodities e empresas. Use cotações apenas "
+        "quando derem contexto; não faça uma leitura sequencial de todos os números."
+        if opening else
+        "Apresente as principais cotações de forma condensada e depois explique de três "
+        "a cinco destaques do dia, maiores movimentos e o que acompanhar no próximo pregão."
+    )
+    facts = {
+        "edicao": edition,
+        "data_hora_sao_paulo": now.isoformat(),
+        "cotacoes": snapshot,
+        "selic": selic_value,
+        "manchetes_selecionadas": news,
+    }
+    prompt = f"""
+Você é editor de um podcast financeiro brasileiro. Escreva somente o texto final da
+narração, em português do Brasil, com aproximadamente 450 a 650 palavras.
+
+OBJETIVO DA EDIÇÃO:
+{objective}
+
+REGRAS OBRIGATÓRIAS:
+- Use exclusivamente os fatos fornecidos abaixo. Não complete lacunas com memória.
+- Não invente relações de causa e efeito. Só diga que um fato explica um movimento se
+  essa relação estiver explícita numa manchete; caso contrário, use "em meio a" ou
+  "é um ponto de atenção".
+- Reescreva as manchetes; não as leia como uma lista e não mencione numeração.
+- Explique brevemente por que cada destaque importa para o investidor brasileiro.
+- Corrija concordância, pontuação e fluidez. Evite siglas sem explicação e frases longas.
+- Preserve a diferença entre cotação em tempo real e último fechamento disponível.
+- Não use Markdown, títulos, marcadores, links nem instruções de locução.
+- Comece com Bom dia na abertura e Boa noite no fechamento.
+- Termine informando que o conteúdo é informativo e não é recomendação de investimento.
+
+DADOS DISPONÍVEIS:
+{json.dumps(facts, ensure_ascii=False, default=str)}
+
+RASCUNHO DE SEGURANÇA (pode ser reorganizado, sem acrescentar fatos):
+{fallback}
+""".strip()
+
+    model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash").strip()
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+    payload = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {"temperature": 0.25, "maxOutputTokens": 1400},
+    }
+    try:
+        response = requests.post(
+            url,
+            headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
+            json=payload,
+            timeout=60,
+        )
+        response.raise_for_status()
+        candidates = response.json().get("candidates", [])
+        text = candidates[0]["content"]["parts"][0]["text"].strip() if candidates else ""
+        if len(text) < 500:
+            raise ValueError("resposta editorial vazia ou curta demais")
+        print(f"Roteiro editorial gerado com {model}.")
+        return text
+    except Exception as exc:
+        print(f"Falha na camada editorial ({exc}); usando roteiro determinístico.")
+        return fallback
 
 
 def br_number(value, decimals=2):
@@ -277,7 +353,10 @@ def main():
     EPISODES.mkdir(parents=True, exist_ok=True)
     ensure_cover()
     snapshot = market_snapshot(args.edition)
-    script = build_script(args.edition, snapshot, selic(), headlines(usd_value=snapshot.get("Dólar", {}).get("value")), now)
+    selic_value = selic()
+    news = headlines(usd_value=snapshot.get("Dólar", {}).get("value"))
+    fallback = build_script(args.edition, snapshot, selic_value, news, now)
+    script = editorial_script(args.edition, snapshot, selic_value, news, now, fallback)
     slug = f"{now:%Y-%m-%d}-{args.edition}"
     audio_path = EPISODES / f"{slug}.mp3"
     asyncio.run(synthesize(script, audio_path, config["voice"], config["rate"]))
