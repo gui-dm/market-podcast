@@ -1,13 +1,45 @@
-Bom dia. O cenário para os mercados nesta quinta-feira, 23 de julho de 2026, apresenta o Ibovespa após o último fechamento em 177.548,0 pontos, o que representa uma alta de 2,44% em relação ao fechamento anterior de 173.326,0 pontos. No cenário atual, as manchetes indicam que a decisão de juros do Banco Central Europeu (BCE), os balanços corporativos e a variação do petróleo movem os mercados. Ao mesmo tempo, gastos bilionários com inteligência artificial e tensão no Oriente Médio pressionam os mercados, enquanto o Ibovespa em dólar registra queda nesta data.
+Bom dia. Este é o Market Brief Brasil, edição de abertura de 23/07/2026.
 
-No mercado internacional, os índices futuros de Nova York operam em território negativo. O Futuro do Nasdaq registra queda de 1,32%, cotado a 28.796,25 pontos, ante o fechamento anterior de 29.181,25 pontos. O Futuro do S&P 500 apresenta desvalorização de 0,98%, operando em 7.466,0 pontos contra o fechamento de 7.540,25 pontos. Simultaneamente, o Treasury de 10 anos registra alta de 1,07%, com o yield em 4,707%, comparado aos 4,657% da sessão anterior.
+Horário de referência: 10:52, em São Paulo. Vamos aos principais números disponíveis.
 
-No setor de commodities, o petróleo Brent apresenta queda de 7,70% na cotação atual, negociado a 86,83 dólares, após o último fechamento em 94,07 dólares. O minério de ferro registrou queda de 0,27% em seu fechamento de 22 de julho, cotado a 98,38 dólares. O ouro também opera em queda de 2,03%, a 4.062,70 dólares. No mercado doméstico, as ações da Vale e da Petrobras impulsionaram a bolsa no último fechamento. A Vale encerrou a sessão anterior com alta de 3,77%, cotada a 75,10 reais, enquanto a Petrobras subiu 2,21%, atingindo 42,58 reais. Além destas, a WEG também é citada como fator de impulso para a bolsa.
+Ibovespa: 177.017,02; em queda de 0,30 por cento, com base no último fechamento disponível.
 
-No câmbio, o dólar registra cotação atual de 5,0874 reais, apresentando uma variação de -0,002% em relação ao fechamento anterior de 5,0875 reais. Conforme os dados autorizados, a moeda atingiu o patamar de 5,05 reais, sendo este o menor nível desde junho. Na renda fixa, a taxa Selic está em 14,15%.
+Dólar contra o real: 5,0789; em alta de 0,41 por cento, com base na cotação mais recente.
 
-A movimentação do dia ocorre em meio à divulgação de balanços corporativos e à espera pela decisão de juros do BCE. O mercado observa o impacto do petróleo, que, embora registre queda na cotação atual, é descrito em manchetes como tendo saltado pelo segundo dia consecutivo. As tensões geopolíticas e os investimentos no setor de tecnologia em Nova York permanecem como pontos de pressão para os ativos globais.
+Futuro do Ésse e Pê quinhentos: 7.481,25; em queda de 0,62 por cento, com base na cotação mais recente.
 
-Para o próximo pregão, o mercado deve observar os reflexos da decisão de política monetária na Europa, o desdobramento das tensões no Oriente Médio e a continuidade da temporada de balanços corporativos, além da reação das ações de commodities ao comportamento do petróleo e do minério de ferro.
+Futuro do Náz-dac: 28.854,50; em queda de 0,93 por cento, com base na cotação mais recente.
+
+Juro do título americano de dez anos: yield de 4,703 por cento ao ano, com alta de 4,6 pontos-base sobre o fechamento anterior.
+
+Petróleo Brênt: 86,55; sem variação confirmada, com base na cotação mais recente.
+
+Ouro: 4.061,90; em queda de 1,59 por cento, com base na cotação mais recente.
+
+Minério de ferro: 98,38; em queda de 0,27 por cento, com base no último fechamento disponível.
+
+A taxa de referência consultada no Banco Central está em 14,15 por cento ao ano.
+
+Entre os ativos acompanhados, o maior avanço foi de Petrobras, com 1,81 por cento.
+
+Na ponta negativa, Ouro recuou 1,59 por cento.
+
+No noticiário das últimas vinte e quatro horas, estes são os temas que merecem acompanhamento. As manchetes são uma triagem inicial e devem ser confirmadas nas fontes originais.
+
+1. Ibovespa Hoje Ao Vivo: Confira o que movimenta Bolsa, Dólar e Juros nesta quinta (publicada às 08:20).
+
+2. Ibovespa hoje: decisão de juros do BCE, balanços corporativos e alta do petróleo movem os mercados (publicada às 08:09).
+
+3. Gastos bilionários com IA e tensão no Oriente Médio pressionam mercados; Ibovespa em dólar cai hoje (23) (publicada às 07:15).
+
+4. Dólar sobe e Ibovespa futuro cai, com petróleo saltando pelo segundo dia consecutivo (publicada às 09:04).
+
+5. Dólar fecha a R$ 5,05 no menor patamar desde junho e Bolsa sobe 2,4% (publicada às 19:53).
+
+6. Quinta maior alta do Ibovespa adiciona R$ 104 bi à B3 e aproxima mercado de R$ 5 tri (publicada às 10:08).
+
+7. Dólar cai a R$ 5,05 e Bolsa supera 177 mil pontos (publicada às 08:28).
+
+Ao longo do dia, observe a reação do câmbio, da curva de juros e das ações ligadas a commodities. Os índices brasileiros citados antes da abertura representam o último fechamento, enquanto futuros e ativos globais podem estar em negociação.
 
 As informações têm finalidade informativa e não representam recomendação de investimento.
