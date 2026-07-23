@@ -37,7 +37,9 @@ jobs:
       github.event_name != 'issues' ||
       (github.actor == github.repository_owner &&
        (github.event.issue.title == '[scheduler] abertura' ||
-        github.event.issue.title == '[scheduler] fechamento'))
+        github.event.issue.title == '[scheduler] fechamento' ||
+        github.event.issue.title == '[scheduler] teste abertura' ||
+        github.event.issue.title == '[scheduler] teste fechamento'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -50,8 +52,8 @@ jobs:
             echo "value=${{ inputs.edition }}" >> "$GITHUB_OUTPUT"
           elif [ "${{ github.event_name }}" = "issues" ]; then
             case "${{ github.event.issue.title }}" in
-              "[scheduler] abertura") echo "value=abertura" >> "$GITHUB_OUTPUT" ;;
-              "[scheduler] fechamento") echo "value=fechamento" >> "$GITHUB_OUTPUT" ;;
+              "[scheduler] abertura"|"[scheduler] teste abertura") echo "value=abertura" >> "$GITHUB_OUTPUT" ;;
+              "[scheduler] fechamento"|"[scheduler] teste fechamento") echo "value=fechamento" >> "$GITHUB_OUTPUT" ;;
               *) echo "Sinal de agendamento inválido."; exit 1 ;;
             esac
           elif [ "${{ github.event.schedule }}" = "30,45 10 * * 1-5" ] || [ "${{ github.event.schedule }}" = "*/15 11-12 * * 1-5" ]; then
@@ -68,7 +70,13 @@ jobs:
         run: |
           EPISODE_DATE="$(TZ=America/Sao_Paulo date +%F)"
           EPISODE_PATH="docs/episodes/${EPISODE_DATE}-${EDITION}.mp3"
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ ! -f "$EPISODE_PATH" ]; then
+          FORCE_REGENERATE=false
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            FORCE_REGENERATE=true
+          elif [ "${{ github.event_name }}" = "issues" ] && [[ "${{ github.event.issue.title }}" == "[scheduler] teste "* ]]; then
+            FORCE_REGENERATE=true
+          fi
+          if [ "$FORCE_REGENERATE" = "true" ] || [ ! -f "$EPISODE_PATH" ]; then
             echo "Episódio ausente; iniciando geração de $EDITION."
             echo "value=true" >> "$GITHUB_OUTPUT"
           else
