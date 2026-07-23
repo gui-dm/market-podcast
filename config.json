@@ -1,0 +1,11 @@
+{
+  "title": "Market Brief Brasil",
+  "author": "Market Brief Brasil",
+  "description": "Podcasts privados de abertura e fechamento dos mercados brasileiro e internacional.",
+  "language": "pt-BR",
+  "voice": "pt-BR-AntonioNeural",
+  "rate": "-4%",
+  "feed_base_url": "https://gui-dm.github.io/market-podcast",
+  "max_episodes": 40
+}
+
