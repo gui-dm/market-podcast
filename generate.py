@@ -104,7 +104,29 @@ def selic():
         return None
 
 
-def headlines(limit=4):
+def headline_too_similar(title, existing):
+    stopwords = {"a", "o", "e", "de", "da", "do", "em", "com", "para", "por", "um", "uma"}
+    words = {w for w in re.findall(r"[a-zá-ú0-9]+", title.casefold()) if w not in stopwords and len(w) > 2}
+    for previous in existing:
+        previous_words = {w for w in re.findall(r"[a-zá-ú0-9]+", previous.casefold()) if w not in stopwords and len(w) > 2}
+        union = words | previous_words
+        if union and len(words & previous_words) / len(union) >= 0.38:
+            return True
+    return False
+
+
+def headline_has_bad_fx_reference(title, usd_value):
+    if not usd_value:
+        return False
+    matches = re.findall(r"R\$\s*(\d+[,.]\d+)", title, flags=re.IGNORECASE)
+    for match in matches:
+        quoted = float(match.replace(",", "."))
+        if abs(quoted / usd_value - 1) > 0.025:
+            return True
+    return False
+
+
+def headlines(limit=4, usd_value=None):
     items = []
     for url in NEWS_FEEDS:
         try:
@@ -114,7 +136,9 @@ def headlines(limit=4):
                 normalized = title.casefold()
                 relevant = sum(term in normalized for term in NEWS_TERMS)
                 noisy = any(term in normalized for term in ("como funciona", "saiba como", "guia", "portal nacional"))
-                if title and relevant >= 1 and not noisy and title not in items:
+                if (title and relevant >= 1 and not noisy and title not in items
+                        and not headline_has_bad_fx_reference(title, usd_value)
+                        and not headline_too_similar(title, items)):
                     items.append(title)
         except Exception:
             continue
@@ -142,16 +166,16 @@ def spoken_asset(label, item, edition):
     spoken_label = SPOKEN_LABELS.get(label, label)
     if item["value"] is None:
         return f"A cotação de {spoken_label} não estava disponível na coleta."
-    reference = "cotação mais recente" if edition == "abertura" and ("Futuro" in label or label in {"Dólar", "Petróleo Brent", "Ouro"}) else "último fechamento disponível"
+    reference = "com base na cotação mais recente" if edition == "abertura" and ("Futuro" in label or label in {"Dólar", "Petróleo Brent", "Ouro"}) else "com base no último fechamento disponível"
     if label == "Dólar":
         value = br_number(item["value"], 4)
-        return f"Dólar contra o real: {value}; {direction(item['change'])}, na {reference}."
+        return f"Dólar contra o real: {value}; {direction(item['change'])}, {reference}."
     if label == "Treasury de 10 anos":
         bps = (item["value"] - item["previous"]) * 100
         move = f"alta de {br_number(abs(bps), 1)} pontos-base" if bps > 0.05 else f"queda de {br_number(abs(bps), 1)} pontos-base" if bps < -0.05 else "estabilidade"
         return f"{spoken_label}: yield de {br_number(item['value'], 3)} por cento ao ano, com {move} sobre o fechamento anterior."
     value = br_number(item["value"])
-    return f"{spoken_label}: {value}; {direction(item['change'])}, no {reference}."
+    return f"{spoken_label}: {value}; {direction(item['change'])}, {reference}."
 
 
 def build_script(edition, snapshot, selic_value, news, now):
@@ -253,7 +277,7 @@ def main():
     EPISODES.mkdir(parents=True, exist_ok=True)
     ensure_cover()
     snapshot = market_snapshot(args.edition)
-    script = build_script(args.edition, snapshot, selic(), headlines(), now)
+    script = build_script(args.edition, snapshot, selic(), headlines(usd_value=snapshot.get("Dólar", {}).get("value")), now)
     slug = f"{now:%Y-%m-%d}-{args.edition}"
     audio_path = EPISODES / f"{slug}.mp3"
     asyncio.run(synthesize(script, audio_path, config["voice"], config["rate"]))
