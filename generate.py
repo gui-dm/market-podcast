@@ -218,8 +218,71 @@ RASCUNHO DE SEGURANÇA (pode ser reorganizado, sem acrescentar fatos):
         print(f"Resposta editorial recebida com {len(text)} caracteres.")
         if len(text) < 900:
             raise ValueError(f"resposta editorial curta demais: {len(text)} caracteres")
+
+        review_prompt = f"""
+Atue como revisor factual de um podcast financeiro. Reescreva o roteiro abaixo
+mantendo apenas afirmações sustentadas pelos DADOS AUTORIZADOS.
+
+REGRAS:
+- Não acrescente nenhum fato, agente, fluxo de capital, expectativa ou causa.
+- Uma relação de causa e efeito só pode permanecer quando estiver explicitamente
+  declarada em uma das manchetes autorizadas.
+- Caso a relação seja apenas simultânea, use "em meio a" ou "ao mesmo tempo".
+- Não transforme "tarifas" em impostos ou mudanças tributárias sem essa informação.
+- A edição de abertura deve começar exatamente com "Bom dia.".
+- A edição de fechamento deve começar exatamente com "Boa noite.".
+- Remova qualquer saudação adicional no final.
+- Preserve números, datas e distinção entre cotação atual e último fechamento.
+- Entregue somente a narração revisada, sem Markdown ou comentários.
+
+EDIÇÃO: {edition}
+DADOS AUTORIZADOS:
+{json.dumps(facts, ensure_ascii=False, default=str)}
+
+ROTEIRO A REVISAR:
+{text}
+""".strip()
+        review_payload = {
+            "contents": [{"parts": [{"text": review_prompt}]}],
+            "generationConfig": {
+                "maxOutputTokens": 3000,
+                "thinkingConfig": {"thinkingLevel": "minimal"},
+            },
+        }
+        review_response = requests.post(
+            url,
+            headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
+            json=review_payload,
+            timeout=60,
+        )
+        review_response.raise_for_status()
+        review_candidates = review_response.json().get("candidates", [])
+        reviewed = (
+            review_candidates[0]["content"]["parts"][0]["text"].strip()
+            if review_candidates else ""
+        )
+        if len(reviewed) < 900:
+            raise ValueError(f"revisão factual curta demais: {len(reviewed)} caracteres")
+
+        reviewed = re.sub(
+            r"^\\s*(Bom dia|Boa noite)\\.?\\s*",
+            "",
+            reviewed,
+            count=1,
+            flags=re.IGNORECASE,
+        )
+        reviewed = re.sub(
+            r"\\s*(Bom dia|Boa noite)\\.?\\s*$",
+            "",
+            reviewed,
+            count=1,
+            flags=re.IGNORECASE,
+        ).strip()
+        greeting = "Bom dia" if opening else "Boa noite"
+        reviewed = f"{greeting}. {reviewed}"
+        print(f"Roteiro editorial revisado com {len(reviewed)} caracteres.")
         print(f"Roteiro editorial gerado com {model}.")
-        return text
+        return reviewed
     except Exception as exc:
         print(f"Falha na camada editorial ({exc}); usando roteiro determinístico.")
         return fallback
