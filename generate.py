@@ -196,7 +196,7 @@ RASCUNHO DE SEGURANÇA (pode ser reorganizado, sem acrescentar fatos):
 {fallback}
 """.strip()
 
-    model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash").strip()
+    model = os.getenv("GEMINI_MODEL", "gemini-3-flash-preview").strip()
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
