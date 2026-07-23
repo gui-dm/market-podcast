@@ -200,7 +200,10 @@ RASCUNHO DE SEGURANÇA (pode ser reorganizado, sem acrescentar fatos):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {"temperature": 0.25, "maxOutputTokens": 1400},
+        "generationConfig": {
+            "maxOutputTokens": 3000,
+            "thinkingConfig": {"thinkingLevel": "minimal"},
+        },
     }
     try:
         response = requests.post(
@@ -212,8 +215,9 @@ RASCUNHO DE SEGURANÇA (pode ser reorganizado, sem acrescentar fatos):
         response.raise_for_status()
         candidates = response.json().get("candidates", [])
         text = candidates[0]["content"]["parts"][0]["text"].strip() if candidates else ""
-        if len(text) < 500:
-            raise ValueError("resposta editorial vazia ou curta demais")
+        print(f"Resposta editorial recebida com {len(text)} caracteres.")
+        if len(text) < 900:
+            raise ValueError(f"resposta editorial curta demais: {len(text)} caracteres")
         print(f"Roteiro editorial gerado com {model}.")
         return text
     except Exception as exc:
