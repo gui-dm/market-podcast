@@ -267,13 +267,13 @@ ROTEIRO A REVISAR:
             raise ValueError(f"revisão factual curta demais: {len(reviewed)} caracteres")
 
         reviewed = re.sub(
-            r"^(?:\\s*(?:Bom dia|Boa noite)\\.?\\s*)+",
+            r"^(?:\s*(?:Bom dia|Boa noite)\.?\s*)+",
             "",
             reviewed,
             flags=re.IGNORECASE,
         )
         reviewed = re.sub(
-            r"(?:\\s*(?:Bom dia|Boa noite)\\.?\\s*)+$",
+            r"(?:\s*(?:Bom dia|Boa noite)\.?\s*)+$",
             "",
             reviewed,
             flags=re.IGNORECASE,
@@ -283,14 +283,14 @@ ROTEIRO A REVISAR:
             "recomendação de investimento."
         )
         reviewed = re.sub(
-            r"\\s*As informações têm finalidade informativa e não representam "
-            r"recomendação de investimento\\.?(?:\\s*)$",
+            r"\s*As informações têm finalidade informativa e não representam "
+            r"recomendação de investimento\.?\s*$",
             "",
             reviewed,
             flags=re.IGNORECASE,
         ).strip()
         greeting = "Bom dia" if opening else "Boa noite"
-        reviewed = f"{greeting}. {reviewed}\\n\\n{disclaimer}"
+        reviewed = f"{greeting}. {reviewed}\n\n{disclaimer}"
         print(f"Roteiro editorial revisado com {len(reviewed)} caracteres.")
         print(f"Roteiro editorial gerado com {model}.")
         return reviewed
