@@ -233,6 +233,8 @@ REGRAS:
 - A edição de fechamento deve começar exatamente com "Boa noite.".
 - Remova qualquer saudação adicional no final.
 - Preserve números, datas e distinção entre cotação atual e último fechamento.
+- Preserve uma narração completa de 450 a 650 palavras; não resuma em tópicos.
+- Mantenha uma conclusão com o que observar no próximo pregão.
 - Entregue somente a narração revisada, sem Markdown ou comentários.
 
 EDIÇÃO: {edition}
@@ -261,25 +263,34 @@ ROTEIRO A REVISAR:
             review_candidates[0]["content"]["parts"][0]["text"].strip()
             if review_candidates else ""
         )
-        if len(reviewed) < 900:
+        if len(reviewed) < 1800:
             raise ValueError(f"revisão factual curta demais: {len(reviewed)} caracteres")
 
         reviewed = re.sub(
-            r"^\\s*(Bom dia|Boa noite)\\.?\\s*",
+            r"^(?:\s*(?:Bom dia|Boa noite)\.?\s*)+",
             "",
             reviewed,
-            count=1,
             flags=re.IGNORECASE,
         )
         reviewed = re.sub(
-            r"\\s*(Bom dia|Boa noite)\\.?\\s*$",
+            r"(?:\s*(?:Bom dia|Boa noite)\.?\s*)+$",
             "",
             reviewed,
-            count=1,
+            flags=re.IGNORECASE,
+        ).strip()
+        disclaimer = (
+            "As informações têm finalidade informativa e não representam "
+            "recomendação de investimento."
+        )
+        reviewed = re.sub(
+            r"\s*As informações têm finalidade informativa e não representam "
+            r"recomendação de investimento\.?\s*$",
+            "",
+            reviewed,
             flags=re.IGNORECASE,
         ).strip()
         greeting = "Bom dia" if opening else "Boa noite"
-        reviewed = f"{greeting}. {reviewed}"
+        reviewed = f"{greeting}. {reviewed}\n\n{disclaimer}"
         print(f"Roteiro editorial revisado com {len(reviewed)} caracteres.")
         print(f"Roteiro editorial gerado com {model}.")
         return reviewed
