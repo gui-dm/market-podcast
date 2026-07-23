@@ -200,7 +200,7 @@ RASCUNHO DE SEGURANÇA (pode ser reorganizado, sem acrescentar fatos):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {"temperature": 0.25, "maxOutputTokens": 1400},
+        "generationConfig": {\n            "maxOutputTokens": 3000,\n            "thinkingConfig": {"thinkingLevel": "minimal"},\n        },
     }
     try:
         response = requests.post(
