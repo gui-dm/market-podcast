@@ -2,15 +2,12 @@ name: Generate market podcast
 
 on:
   schedule:
-    # Multiple cloud attempts make delivery resilient to delayed or dropped cron events.
-    # São Paulo: abertura 07:30/07:45/08:00/09:00; fechamento 18:00/18:15/18:30.
-    - cron: "30 10 * * 1-5"
-    - cron: "45 10 * * 1-5"
-    - cron: "0 11 * * 1-5"
-    - cron: "0 12 * * 1-5"
-    - cron: "0 21 * * 1-5"
-    - cron: "15 21 * * 1-5"
-    - cron: "30 21 * * 1-5"
+    # Recovery window for São Paulo. GitHub may delay or drop individual cron events,
+    # so the workflow checks repeatedly and exits as soon as today's episode exists.
+    # Abertura: 07:30-09:45; fechamento: 18:00-19:45.
+    - cron: "30,45 10 * * 1-5"
+    - cron: "*/15 11-12 * * 1-5"
+    - cron: "*/15 21-22 * * 1-5"
   workflow_dispatch:
     inputs:
       edition:
@@ -35,22 +32,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: pip
-      - run: pip install -r requirements.txt
+
       - name: Select edition
         id: edition
         shell: bash
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "value=${{ inputs.edition }}" >> "$GITHUB_OUTPUT"
-          elif [ "$(date -u +%H)" -lt 15 ]; then
+          elif [ "${{ github.event.schedule }}" = "30,45 10 * * 1-5" ] || [ "${{ github.event.schedule }}" = "*/15 11-12 * * 1-5" ]; then
             echo "value=abertura" >> "$GITHUB_OUTPUT"
           else
             echo "value=fechamento" >> "$GITHUB_OUTPUT"
           fi
+
       - name: Check whether episode is needed
         id: needed
         shell: bash
@@ -60,17 +54,30 @@ jobs:
           EPISODE_DATE="$(TZ=America/Sao_Paulo date +%F)"
           EPISODE_PATH="docs/episodes/${EPISODE_DATE}-${EDITION}.mp3"
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ ! -f "$EPISODE_PATH" ]; then
+            echo "Episódio ausente; iniciando geração de $EDITION."
             echo "value=true" >> "$GITHUB_OUTPUT"
           else
-            echo "Episódio já publicado em $EPISODE_PATH; tentativa redundante encerrada."
+            echo "Episódio já publicado em $EPISODE_PATH; verificação encerrada sem gerar duplicidade."
             echo "value=false" >> "$GITHUB_OUTPUT"
           fi
+
+      - uses: actions/setup-python@v5
+        if: steps.needed.outputs.value == 'true'
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        if: steps.needed.outputs.value == 'true'
+        run: pip install -r requirements.txt
+
       - name: Generate editorial episode
         if: steps.needed.outputs.value == 'true'
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: gemini-3-flash-preview
         run: python generate.py --edition "${{ steps.edition.outputs.value }}"
+
       - name: Commit episode
         if: steps.needed.outputs.value == 'true'
         shell: bash
@@ -78,13 +85,16 @@ jobs:
           git config user.name "market-podcast-bot"
           git config user.email "actions@users.noreply.github.com"
           git add docs
-          git commit -m "publish ${{ steps.edition.outputs.value }} $(date -u +%F)" || exit 0
+          git commit -m "publish ${{ steps.edition.outputs.value }} $(TZ=America/Sao_Paulo date +%F)" || exit 0
           git push
+
       - uses: actions/configure-pages@v5
         if: steps.needed.outputs.value == 'true'
+
       - uses: actions/upload-pages-artifact@v3
         if: steps.needed.outputs.value == 'true'
         with:
           path: docs
+
       - uses: actions/deploy-pages@v4
         if: steps.needed.outputs.value == 'true'
