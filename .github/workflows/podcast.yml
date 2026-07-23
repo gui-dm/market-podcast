@@ -2,12 +2,13 @@ name: Generate market podcast
 
 on:
   schedule:
-    # Recovery window for São Paulo. GitHub may delay or drop individual cron events,
-    # so the workflow checks repeatedly and exits as soon as today's episode exists.
-    # Abertura: 07:30-09:45; fechamento: 18:00-19:45.
+    # GitHub cron remains as a fallback. The primary clock is an external
+    # authenticated issue trigger created by ChatGPT Automations.
     - cron: "30,45 10 * * 1-5"
     - cron: "*/15 11-12 * * 1-5"
     - cron: "*/15 21-22 * * 1-5"
+  issues:
+    types: [opened]
   workflow_dispatch:
     inputs:
       edition:
@@ -22,6 +23,7 @@ permissions:
   contents: write
   pages: write
   id-token: write
+  issues: write
 
 concurrency:
   group: market-podcast
@@ -29,6 +31,13 @@ concurrency:
 
 jobs:
   generate:
+    # Issue signals are accepted only from the repository owner and only with
+    # one of the two exact scheduler titles, preventing public abuse.
+    if: >-
+      github.event_name != 'issues' ||
+      (github.actor == github.repository_owner &&
+       (github.event.issue.title == '[scheduler] abertura' ||
+        github.event.issue.title == '[scheduler] fechamento'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -39,6 +48,12 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "value=${{ inputs.edition }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "issues" ]; then
+            case "${{ github.event.issue.title }}" in
+              "[scheduler] abertura") echo "value=abertura" >> "$GITHUB_OUTPUT" ;;
+              "[scheduler] fechamento") echo "value=fechamento" >> "$GITHUB_OUTPUT" ;;
+              *) echo "Sinal de agendamento inválido."; exit 1 ;;
+            esac
           elif [ "${{ github.event.schedule }}" = "30,45 10 * * 1-5" ] || [ "${{ github.event.schedule }}" = "*/15 11-12 * * 1-5" ]; then
             echo "value=abertura" >> "$GITHUB_OUTPUT"
           else
@@ -98,3 +113,9 @@ jobs:
 
       - uses: actions/deploy-pages@v4
         if: steps.needed.outputs.value == 'true'
+
+      - name: Close scheduler signal
+        if: github.event_name == 'issues' && always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh issue close "${{ github.event.issue.number }}" --reason completed --comment "Sinal automático processado pelo workflow do podcast."
