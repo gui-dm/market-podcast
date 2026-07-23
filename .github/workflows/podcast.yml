@@ -2,8 +2,14 @@ name: Generate market podcast
 
 on:
   schedule:
+    # Multiple cloud attempts make delivery resilient to delayed or dropped cron events.
+    # São Paulo: abertura 07:30/07:45/08:00; fechamento 18:00/18:15/18:30.
+    - cron: "30 10 * * 1-5"
     - cron: "45 10 * * 1-5"
+    - cron: "0 11 * * 1-5"
+    - cron: "0 21 * * 1-5"
     - cron: "15 21 * * 1-5"
+    - cron: "30 21 * * 1-5"
   workflow_dispatch:
     inputs:
       edition:
@@ -44,12 +50,28 @@ jobs:
           else
             echo "value=fechamento" >> "$GITHUB_OUTPUT"
           fi
+      - name: Check whether episode is needed
+        id: needed
+        shell: bash
+        env:
+          EDITION: ${{ steps.edition.outputs.value }}
+        run: |
+          EPISODE_DATE="$(TZ=America/Sao_Paulo date +%F)"
+          EPISODE_PATH="docs/episodes/${EPISODE_DATE}-${EDITION}.mp3"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ ! -f "$EPISODE_PATH" ]; then
+            echo "value=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Episódio já publicado em $EPISODE_PATH; tentativa redundante encerrada."
+            echo "value=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: Generate editorial episode
+        if: steps.needed.outputs.value == 'true'
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: gemini-3-flash-preview
         run: python generate.py --edition "${{ steps.edition.outputs.value }}"
       - name: Commit episode
+        if: steps.needed.outputs.value == 'true'
         shell: bash
         run: |
           git config user.name "market-podcast-bot"
@@ -58,7 +80,10 @@ jobs:
           git commit -m "publish ${{ steps.edition.outputs.value }} $(date -u +%F)" || exit 0
           git push
       - uses: actions/configure-pages@v5
+        if: steps.needed.outputs.value == 'true'
       - uses: actions/upload-pages-artifact@v3
+        if: steps.needed.outputs.value == 'true'
         with:
           path: docs
       - uses: actions/deploy-pages@v4
+        if: steps.needed.outputs.value == 'true'
