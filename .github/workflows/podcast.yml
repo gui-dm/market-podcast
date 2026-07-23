@@ -3,10 +3,11 @@ name: Generate market podcast
 on:
   schedule:
     # Multiple cloud attempts make delivery resilient to delayed or dropped cron events.
-    # São Paulo: abertura 07:30/07:45/08:00; fechamento 18:00/18:15/18:30.
+    # São Paulo: abertura 07:30/07:45/08:00/09:00; fechamento 18:00/18:15/18:30.
     - cron: "30 10 * * 1-5"
     - cron: "45 10 * * 1-5"
     - cron: "0 11 * * 1-5"
+    - cron: "0 12 * * 1-5"
     - cron: "0 21 * * 1-5"
     - cron: "15 21 * * 1-5"
     - cron: "30 21 * * 1-5"
