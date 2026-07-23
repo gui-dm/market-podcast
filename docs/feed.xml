@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='utf-8'?>
+<rss xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" version="2.0">
+  <channel>
+    <title>Market Brief Brasil</title>
+    <link>https://gui-dm.github.io/market-podcast</link>
+    <language>pt-BR</language>
+    <description>Podcasts privados de abertura e fechamento dos mercados brasileiro e internacional.</description>
+    <lastBuildDate>Thu, 23 Jul 2026 01:08:38 +0000</lastBuildDate>
+    <itunes:author>Market Brief Brasil</itunes:author>
+    <itunes:explicit>false</itunes:explicit>
+    <itunes:image href="https://gui-dm.github.io/market-podcast/cover.png" />
+    <item>
+      <title>Abertura — 22/07/2026</title>
+      <description>Market Brief Brasil: edição de abertura.</description>
+      <guid>9d0d79ff-3b06-54c8-b06d-3588b15ac3c3</guid>
+      <pubDate>Thu, 23 Jul 2026 01:08:25 +0000</pubDate>
+      <enclosure url="https://gui-dm.github.io/market-podcast/episodes/2026-07-22-abertura.mp3" length="861264" type="audio/mpeg" />
+      <itunes:duration>143</itunes:duration>
+      <itunes:explicit>false</itunes:explicit>
+    </item>
+  </channel>
+</rss>
