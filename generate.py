@@ -7,7 +7,7 @@ import math
 import os
 import re
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from email.utils import format_datetime
 from pathlib import Path
 from xml.etree import ElementTree as ET
@@ -79,17 +79,44 @@ def market_snapshot(edition):
     assets = COMMON_ASSETS | (OPENING_ASSETS if edition == "abertura" else CLOSING_ASSETS)
     for label, ticker in assets.items():
         try:
-            hist = yf.Ticker(ticker).history(period="7d", interval="1d", auto_adjust=False)
+            quote = yf.Ticker(ticker)
+            hist = quote.history(period="7d", interval="1d", auto_adjust=False)
             closes = [safe_number(v) for v in hist["Close"].tolist()]
             closes = [v for v in closes if v is not None]
             if not closes:
                 raise ValueError("sem cotação")
             last = closes[-1]
             previous = closes[-2] if len(closes) > 1 else last
+            quote_kind = "último fechamento"
+
+            # Na abertura, ativos globais e câmbio já estão negociando. O candle
+            # diário de futuros pode misturar contratos e produzir falsos gaps.
+            if edition == "abertura" and label in {
+                "Dólar", "Treasury de 10 anos", "Petróleo Brent", "Ouro",
+                "Futuro do S&P 500", "Futuro do Nasdaq",
+            }:
+                intraday = quote.history(period="2d", interval="5m", auto_adjust=False)
+                intraday_closes = [safe_number(v) for v in intraday["Close"].tolist()]
+                intraday_closes = [v for v in intraday_closes if v is not None]
+                if intraday_closes:
+                    last = intraday_closes[-1]
+                    quote_kind = "intradiária"
+                fast_previous = safe_number(getattr(quote.fast_info, "previous_close", None))
+                if fast_previous:
+                    previous = fast_previous
             change = ((last / previous) - 1) * 100 if previous else 0
+            # Movimentos desse tamanho em poucas horas normalmente indicam rolagem
+            # de contrato ou dado inconsistente. Melhor omitir do que narrar errado.
+            max_opening_move = 5.0 if label in {"Petróleo Brent", "Ouro"} else 3.0
+            if edition == "abertura" and quote_kind == "intradiária" and abs(change) > max_opening_move:
+                change = None
             timestamp = hist.index[-1]
             reference_date = timestamp.strftime("%d/%m") if hasattr(timestamp, "strftime") else ""
-            result[label] = {"value": last, "change": change, "previous": previous, "ticker": ticker, "reference_date": reference_date}
+            result[label] = {
+                "value": last, "change": change, "previous": previous,
+                "ticker": ticker, "reference_date": reference_date,
+                "quote_kind": quote_kind,
+            }
         except Exception as exc:
             result[label] = {"value": None, "change": None, "ticker": ticker, "error": str(exc)}
     return result
@@ -127,20 +154,44 @@ def headline_has_bad_fx_reference(title, usd_value):
     return False
 
 
-def headlines(limit=8, usd_value=None):
+def entry_datetime(entry):
+    parsed = entry.get("published_parsed") or entry.get("updated_parsed")
+    if not parsed:
+        return None
+    return datetime(*parsed[:6], tzinfo=timezone.utc).astimezone(TZ)
+
+
+def headlines(limit=8, usd_value=None, now=None, edition="abertura"):
+    now = now or datetime.now(TZ)
+    # A abertura deve explicar o que está acontecendo hoje. Aceita madrugada e
+    # primeiras horas da manhã; fatos de ontem entram somente se publicados após
+    # o fechamento e ainda forem relevantes para a sessão atual.
+    cutoff = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    if edition == "abertura":
+        cutoff -= timedelta(hours=6)
+    else:
+        cutoff = now.replace(hour=6, minute=0, second=0, microsecond=0)
     items = []
     for url in NEWS_FEEDS:
         try:
             parsed = feedparser.parse(url)
             for entry in parsed.entries[:limit]:
+                published_at = entry_datetime(entry)
+                if published_at is None or published_at < cutoff or published_at > now + timedelta(minutes=10):
+                    continue
                 title = re.sub(r"\s+-\s+[^-]+$", "", entry.title).strip(" .")
                 normalized = title.casefold()
                 relevant = sum(term in normalized for term in NEWS_TERMS)
                 noisy = any(term in normalized for term in ("como funciona", "saiba como", "guia", "portal nacional"))
                 if (title and relevant >= 1 and not noisy and title not in items
                         and not headline_has_bad_fx_reference(title, usd_value)
-                        and not headline_too_similar(title, items)):
-                    items.append(title)
+                        and not headline_too_similar(
+                            title, [item["titulo"] for item in items]
+                        )):
+                    items.append({
+                        "titulo": title,
+                        "publicado_em": published_at.isoformat(),
+                    })
         except Exception:
             continue
     return items[:limit]
@@ -178,6 +229,13 @@ OBJETIVO DA EDIÇÃO:
 
 REGRAS OBRIGATÓRIAS:
 - Use exclusivamente os fatos fornecidos abaixo. Não complete lacunas com memória.
+- Priorize acontecimentos publicados na data da edição. Não diga "hoje" sobre
+  movimento cuja referência seja o fechamento anterior.
+- A direção de preço vem exclusivamente de "cotacoes". Manchetes dão contexto,
+  mas nunca substituem, corrigem ou contradizem a variação numérica.
+- Se "change" for nulo, informe apenas o preço e diga que a direção não foi
+  confirmada; não infira alta ou queda pelo texto das manchetes.
+- Se uma manchete divergir da cotação, omita a direção presente na manchete.
 - Não invente relações de causa e efeito. Só diga que um fato explica um movimento se
   essa relação estiver explícita numa manchete; caso contrário, use "em meio a" ou
   "é um ponto de atenção".
@@ -233,6 +291,10 @@ REGRAS:
 - A edição de fechamento deve começar exatamente com "Boa noite.".
 - Remova qualquer saudação adicional no final.
 - Preserve números, datas e distinção entre cotação atual e último fechamento.
+- A direção dos ativos deve vir somente de "cotacoes"; manchetes não podem
+  determinar se um ativo sobe ou cai.
+- Se "change" for nulo ou houver conflito entre cotação e manchete, não atribua
+  direção ao ativo e não tente conciliar versões contraditórias.
 - Preserve uma narração completa de 450 a 650 palavras; não resuma em tópicos.
 - Mantenha uma conclusão com o que observar no próximo pregão.
 - Entregue somente a narração revisada, sem Markdown ou comentários.
@@ -355,7 +417,11 @@ def build_script(edition, snapshot, selic_value, news, now):
             parts.append(f"Na ponta negativa, {bottom} recuou {br_number(abs(bottom_change))} por cento.")
     if news:
         parts.append("No noticiário das últimas vinte e quatro horas, estes são os temas que merecem acompanhamento. As manchetes são uma triagem inicial e devem ser confirmadas nas fontes originais.")
-        parts.extend(f"{idx}. {headline}." for idx, headline in enumerate(news, 1))
+        parts.extend(
+            f"{idx}. {headline['titulo']} (publicada às "
+            f"{datetime.fromisoformat(headline['publicado_em']):%H:%M})."
+            for idx, headline in enumerate(news, 1)
+        )
     if opening:
         global_risk = snapshot.get("Treasury de 10 anos", {}).get("value")
         brent_change = snapshot.get("Petróleo Brent", {}).get("change")
@@ -432,7 +498,11 @@ def main():
     ensure_cover()
     snapshot = market_snapshot(args.edition)
     selic_value = selic()
-    news = headlines(usd_value=snapshot.get("Dólar", {}).get("value"))
+    news = headlines(
+        usd_value=snapshot.get("Dólar", {}).get("value"),
+        now=now,
+        edition=args.edition,
+    )
     fallback = build_script(args.edition, snapshot, selic_value, news, now)
     script = editorial_script(args.edition, snapshot, selic_value, news, now, fallback)
     slug = f"{now:%Y-%m-%d}-{args.edition}"
