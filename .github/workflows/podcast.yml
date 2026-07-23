@@ -1,0 +1,61 @@
+name: Generate market podcast
+
+on:
+  schedule:
+    - cron: "45 10 * * 1-5"
+    - cron: "15 21 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      edition:
+        description: Edição a gerar
+        required: true
+        type: choice
+        options:
+          - abertura
+          - fechamento
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: market-podcast
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Select edition
+        id: edition
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "value=${{ inputs.edition }}" >> "$GITHUB_OUTPUT"
+          elif [ "$(date -u +%H)" -lt 15 ]; then
+            echo "value=abertura" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=fechamento" >> "$GITHUB_OUTPUT"
+          fi
+      - run: python generate.py --edition "${{ steps.edition.outputs.value }}"
+      - name: Commit episode
+        shell: bash
+        run: |
+          git config user.name "market-podcast-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add docs
+          git commit -m "publish ${{ steps.edition.outputs.value }} $(date -u +%F)" || exit 0
+          git push
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+      - uses: actions/deploy-pages@v4
+
