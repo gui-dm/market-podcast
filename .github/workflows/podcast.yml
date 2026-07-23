@@ -44,7 +44,11 @@ jobs:
           else
             echo "value=fechamento" >> "$GITHUB_OUTPUT"
           fi
-      - run: python generate.py --edition "${{ steps.edition.outputs.value }}"
+      - name: Generate editorial episode
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: gemini-2.5-flash
+        run: python generate.py --edition "${{ steps.edition.outputs.value }}"
       - name: Commit episode
         shell: bash
         run: |
@@ -58,4 +62,3 @@ jobs:
         with:
           path: docs
       - uses: actions/deploy-pages@v4
-
