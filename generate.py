@@ -19,6 +19,8 @@ import yfinance as yf
 from PIL import Image, ImageDraw, ImageFont
 from zoneinfo import ZoneInfo
 
+from editorial_validation import validate_episode
+
 ROOT = Path(__file__).resolve().parent
 DOCS = ROOT / "docs"
 EPISODES = DOCS / "episodes"
@@ -112,10 +114,15 @@ def market_snapshot(edition):
                 change = None
             timestamp = hist.index[-1]
             reference_date = timestamp.strftime("%d/%m") if hasattr(timestamp, "strftime") else ""
+            collected_at = datetime.now(TZ).isoformat()
             result[label] = {
                 "value": last, "change": change, "previous": previous,
                 "ticker": ticker, "reference_date": reference_date,
                 "quote_kind": quote_kind,
+                "instrument": ticker,
+                "collected_at": collected_at,
+                "source": "Yahoo Finance",
+                "source_url": f"https://finance.yahoo.com/quote/{ticker}",
             }
         except Exception as exc:
             result[label] = {"value": None, "change": None, "ticker": ticker, "error": str(exc)}
@@ -191,6 +198,8 @@ def headlines(limit=8, usd_value=None, now=None, edition="abertura"):
                     items.append({
                         "titulo": title,
                         "publicado_em": published_at.isoformat(),
+                        "fonte": entry.get("source", {}).get("title", "Google News"),
+                        "url": entry.get("link", ""),
                     })
         except Exception:
             continue
@@ -198,11 +207,10 @@ def headlines(limit=8, usd_value=None, now=None, edition="abertura"):
 
 
 def editorial_script(edition, snapshot, selic_value, news, now, fallback):
-    """Transforma dados e manchetes em roteiro editorial, preservando um fallback local."""
+    """Gera roteiro e auditoria estruturados. Falhas impedem a publicação."""
     api_key = os.getenv("GEMINI_API_KEY", "").strip()
     if not api_key:
-        print("GEMINI_API_KEY ausente; usando roteiro determinístico.")
-        return fallback
+        raise RuntimeError("GEMINI_API_KEY ausente; episódio bloqueado antes do áudio")
 
     opening = edition == "abertura"
     objective = (
@@ -221,14 +229,32 @@ def editorial_script(edition, snapshot, selic_value, news, now, fallback):
         "manchetes_selecionadas": news,
     }
     prompt = f"""
-Você é editor de um podcast financeiro brasileiro. Escreva somente o texto final da
-narração, em português do Brasil, com aproximadamente 450 a 650 palavras.
+Você é o editor-chefe e roteirista do Market Brief Brasil. Produza a edição de
+{edition} de {now:%d/%m/%Y}, executada às {now:%H:%M} no fuso America/Sao_Paulo.
+
+Entregue APENAS JSON válido neste formato:
+{{
+  "roteiro": "texto corrido pronto para narração",
+  "auditoria": [
+    {{"tipo":"cotacao|noticia|agenda","item":"...", "valor_ou_fato":"...",
+      "data":"...", "horario":"...", "instrumento":"...", "fonte":"...", "url":"..."}}
+  ],
+  "aprovado": true,
+  "erros": []
+}}
 
 OBJETIVO DA EDIÇÃO:
 {objective}
 
 REGRAS OBRIGATÓRIAS:
 - Use exclusivamente os fatos fornecidos abaixo. Não complete lacunas com memória.
+- Cada número narrado deve possuir na auditoria data, horário, instrumento, fonte e URL.
+- Se um dado não puder ser confirmado, diga que não encontrou confirmação ou omita-o.
+- Não trate o fechamento anterior como movimento de hoje.
+- Na abertura, não chame PTAX, dólar futuro ou futuro de Ibovespa de cotação atual
+  antes da abertura da respectiva sessão. Identifique explicitamente o ajuste anterior.
+- Nunca misture spot, PTAX, futuro, DXY, vencimentos de futuros, último negócio e ajuste.
+- Um tema recorrente só pode voltar quando houver fato novo, nova reação ou novo impacto.
 - Priorize acontecimentos publicados na data da edição. Não diga "hoje" sobre
   movimento cuja referência seja o fechamento anterior.
 - A direção de preço vem exclusivamente de "cotacoes". Manchetes dão contexto,
@@ -243,9 +269,27 @@ REGRAS OBRIGATÓRIAS:
 - Explique brevemente por que cada destaque importa para o investidor brasileiro.
 - Corrija concordância, pontuação e fluidez. Evite siglas sem explicação e frases longas.
 - Preserve a diferença entre cotação em tempo real e último fechamento disponível.
-- Não use Markdown, títulos, marcadores, links nem instruções de locução.
+- O roteiro não deve conter Markdown, links, ficha de auditoria nem instruções de locução.
 - Comece com Bom dia na abertura e Boa noite no fechamento.
-- Termine informando que o conteúdo é informativo e não é recomendação de investimento.
+- Termine exatamente com: "Este conteúdo tem caráter exclusivamente informativo e
+  não constitui recomendação de investimento."
+
+ESTRUTURA DA ABERTURA:
+gancho; pré-abertura global e transmissão para o Brasil; até três fatos relevantes
+do Brasil; até três vetores internacionais; agenda e riscos de hoje com horário de
+Brasília; síntese sem repetir cotações.
+
+ESTRUTURA DO FECHAMENTO:
+gancho; placar do pregão; empresas e catalisadores confirmados; macro do dia;
+exterior no horário da consulta sem chamar mercado aberto de fechamento; agenda
+confirmada de amanhã; pergunta central para o próximo pregão.
+
+CRITÉRIOS DE REPROVAÇÃO:
+data incorreta; cotação essencial sem fonte ou horário; mistura de instrumentos;
+direção contraditória; contratos diferentes usados numa variação; notícia antiga
+tratada como fato novo; agenda na data errada; causalidade sem sustentação; menos
+de 360 palavras; ausência do aviso final. Se ocorrer qualquer um deles, marque
+"aprovado": false e liste os erros. É preferível bloquear a publicação.
 
 DADOS DISPONÍVEIS:
 {json.dumps(facts, ensure_ascii=False, default=str)}
@@ -273,9 +317,14 @@ RASCUNHO DE SEGURANÇA (pode ser reorganizado, sem acrescentar fatos):
         response.raise_for_status()
         candidates = response.json().get("candidates", [])
         text = candidates[0]["content"]["parts"][0]["text"].strip() if candidates else ""
-        print(f"Resposta editorial recebida com {len(text)} caracteres.")
-        if len(text) < 900:
-            raise ValueError(f"resposta editorial curta demais: {len(text)} caracteres")
+        text = re.sub(r"^```(?:json)?\s*|\s*```$", "", text, flags=re.IGNORECASE)
+        result = json.loads(text)
+        script = str(result.get("roteiro", "")).strip()
+        audit = result.get("auditoria", [])
+        if not result.get("aprovado", False):
+            raise ValueError("auditoria editorial reprovou: " + "; ".join(result.get("erros", [])))
+        validate_episode(edition, script, audit, now)
+        print(f"Resposta editorial e auditoria recebidas: {len(script)} caracteres.")
 
         review_prompt = f"""
 Atue como revisor factual de um podcast financeiro. Reescreva o roteiro abaixo
@@ -304,7 +353,7 @@ DADOS AUTORIZADOS:
 {json.dumps(facts, ensure_ascii=False, default=str)}
 
 ROTEIRO A REVISAR:
-{text}
+{script}
 """.strip()
         review_payload = {
             "contents": [{"parts": [{"text": review_prompt}]}],
@@ -341,24 +390,25 @@ ROTEIRO A REVISAR:
             flags=re.IGNORECASE,
         ).strip()
         disclaimer = (
-            "As informações têm finalidade informativa e não representam "
+            "Este conteúdo tem caráter exclusivamente informativo e não constitui "
             "recomendação de investimento."
         )
         reviewed = re.sub(
-            r"\s*As informações têm finalidade informativa e não representam "
-            r"recomendação de investimento\.?\s*$",
+            r"\s*(?:As informações têm finalidade informativa e não representam "
+            r"recomendação de investimento|Este conteúdo tem caráter exclusivamente "
+            r"informativo e não constitui recomendação de investimento)\.?\s*$",
             "",
             reviewed,
             flags=re.IGNORECASE,
         ).strip()
         greeting = "Bom dia" if opening else "Boa noite"
         reviewed = f"{greeting}. {reviewed}\n\n{disclaimer}"
+        validate_episode(edition, reviewed, audit, now)
         print(f"Roteiro editorial revisado com {len(reviewed)} caracteres.")
         print(f"Roteiro editorial gerado com {model}.")
-        return reviewed
+        return reviewed, audit
     except Exception as exc:
-        print(f"Falha na camada editorial ({exc}); usando roteiro determinístico.")
-        return fallback
+        raise RuntimeError(f"episódio bloqueado pela camada editorial: {exc}") from exc
 
 
 def br_number(value, decimals=2):
@@ -504,8 +554,22 @@ def main():
         edition=args.edition,
     )
     fallback = build_script(args.edition, snapshot, selic_value, news, now)
-    script = editorial_script(args.edition, snapshot, selic_value, news, now, fallback)
+    script, audit = editorial_script(args.edition, snapshot, selic_value, news, now, fallback)
     slug = f"{now:%Y-%m-%d}-{args.edition}"
+    audit_path = EPISODES / f"{slug}-auditoria.json"
+    audit_path.write_text(
+        json.dumps(
+            {
+                "edition": args.edition,
+                "generated_at": now.isoformat(),
+                "approved": True,
+                "items": audit,
+            },
+            ensure_ascii=False,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
     audio_path = EPISODES / f"{slug}.mp3"
     asyncio.run(synthesize(script, audio_path, config["voice"], config["rate"]))
     title = f"{args.edition.capitalize()} — {now:%d/%m/%Y}"
