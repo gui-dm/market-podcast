@@ -21,6 +21,7 @@ from zoneinfo import ZoneInfo
 
 from editorial_validation import normalize_audit, validate_audit, validate_episode
 from gemini_client import configured_models, request_with_fallback
+from github_models_client import configured_github_models, request_text
 
 ROOT = Path(__file__).resolve().parent
 DOCS = ROOT / "docs"
@@ -363,6 +364,152 @@ ROTEIRO A REVISAR:
     raise RuntimeError("revisor não produziu roteiro válido")
 
 
+def collected_audit(snapshot, selic_value, news, now):
+    """Converte apenas consultas web concluídas em fatos autorizados para o fallback."""
+    audit = []
+    for label, item in snapshot.items():
+        if item.get("value") is None or not item.get("source_url"):
+            continue
+        collected_at = str(item.get("collected_at", ""))
+        try:
+            collected = datetime.fromisoformat(collected_at)
+        except ValueError:
+            collected = now
+        reference_date = str(item.get("reference_date", "")).strip()
+        if item.get("quote_kind") == "intradiária":
+            reference_date = collected.strftime("%d/%m/%Y")
+        if not re.fullmatch(r"\d{2}/\d{2}/20\d{2}", reference_date):
+            reference_date = now.strftime("%d/%m/%Y")
+        value_fact = {
+            "valor": item.get("value"),
+            "variacao_percentual": item.get("change"),
+            "referencia": item.get("quote_kind", "cotação consultada"),
+        }
+        audit.append({
+            "tipo": "cotacao",
+            "item": label,
+            "valor_ou_fato": json.dumps(value_fact, ensure_ascii=False),
+            "data": reference_date,
+            "horario": collected.strftime("%H:%M"),
+            "instrumento": str(item.get("instrument") or item.get("ticker") or label),
+            "fonte": str(item.get("source") or "Yahoo Finance"),
+            "url": str(item["source_url"]),
+        })
+
+    if selic_value is not None:
+        audit.append({
+            "tipo": "cotacao",
+            "item": "Selic vigente",
+            "valor_ou_fato": f"{selic_value}% ao ano",
+            "data": now.strftime("%d/%m/%Y"),
+            "horario": now.strftime("%H:%M"),
+            "instrumento": "BCB SGS 1178",
+            "fonte": "Banco Central do Brasil",
+            "url": (
+                "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1178/"
+                "dados/ultimos/1?formato=json"
+            ),
+        })
+
+    for item in news:
+        try:
+            published = datetime.fromisoformat(str(item.get("publicado_em", "")))
+        except ValueError:
+            continue
+        url = str(item.get("url", "")).strip()
+        if not url:
+            continue
+        audit.append({
+            "tipo": "noticia",
+            "item": str(item.get("titulo", "")).strip(),
+            "valor_ou_fato": str(item.get("titulo", "")).strip(),
+            "data": published.strftime("%d/%m/%Y"),
+            "horario": published.strftime("%H:%M"),
+            "instrumento": "notícia",
+            "fonte": str(item.get("fonte") or "Google News"),
+            "url": url,
+        })
+    return audit
+
+
+def github_models_editorial_script(
+    edition,
+    snapshot,
+    selic_value,
+    news,
+    now,
+    provider_error,
+):
+    token = os.getenv("GITHUB_MODELS_TOKEN", "").strip()
+    if not token:
+        raise RuntimeError("GITHUB_MODELS_TOKEN ausente")
+    audit = collected_audit(snapshot, selic_value, news, now)
+    validate_audit(audit, now)
+    greeting = "Bom dia." if edition == "abertura" else "Boa noite."
+    structure = (
+        "gancho; pré-abertura global e transmissão para o Brasil; fatos do "
+        "Brasil; vetores internacionais; agenda apenas se estiver confirmada "
+        "na auditoria; síntese"
+        if edition == "abertura"
+        else
+        "gancho; placar do pregão; empresas; macro; exterior no horário da "
+        "consulta; agenda de amanhã apenas se confirmada; encerramento"
+    )
+    feedback = ""
+    for attempt in range(1, 3):
+        provider_summary = " ".join(str(provider_error).split())[:300]
+        prompt = f"""
+Produza a edição de {edition} do podcast Market Brief Brasil em {now:%d/%m/%Y},
+com referência às {now:%H:%M} no fuso America/Sao_Paulo.
+
+O provedor principal de pesquisa ficou indisponível ({provider_summary}). Por isso,
+você deve usar EXCLUSIVAMENTE a FICHA DE FATOS AUTORIZADOS abaixo, construída
+pelo gerador a partir de consultas web concluídas. Não use memória e não acrescente
+agenda, cotação, notícia, empresa, causa, expectativa ou horário ausente da ficha.
+
+REGRAS:
+- Escreva de 450 a 650 palavras, em português brasileiro e texto corrido para áudio.
+- Comece exatamente com "{greeting}".
+- Termine exatamente com: "Este conteúdo tem caráter exclusivamente informativo e
+  não constitui recomendação de investimento."
+- Não use Markdown, URLs, listas, números de seção ou instruções de locução.
+- Não leia todas as linhas da ficha como painel. Selecione os fatos mais úteis.
+- Diferencie cotação intradiária e último fechamento.
+- Na abertura, não apresente Ibovespa à vista como se estivesse negociando antes da B3.
+- Se a variação estiver nula, não atribua direção.
+- Não invente causalidade. Use "em meio a" quando a ficha não provar a relação.
+- Não repita uma manchete literalmente; resuma o fato sem alterar o sentido.
+- Explique por que cada destaque pode importar para o mercado brasileiro.
+- Estrutura editorial: {structure}.
+{feedback}
+
+FICHA DE FATOS AUTORIZADOS:
+{json.dumps(audit, ensure_ascii=False, default=str)}
+""".strip()
+        raw_script, model = request_text(
+            token,
+            prompt,
+            requests.post,
+            models=configured_github_models(),
+        )
+        script = canonicalize_script(edition, raw_script)
+        try:
+            validate_episode(edition, script, audit, now)
+            print(
+                f"Contingência editorial executada com GitHub Models {model}; "
+                f"{len(audit)} fato(s) autorizado(s)."
+            )
+            return script, audit
+        except ValueError as exc:
+            if attempt == 2:
+                raise
+            feedback = (
+                "\nA versão anterior foi reprovada pelo validador local: "
+                f"{exc}. Corrija somente esses pontos."
+            )
+    raise RuntimeError("contingência editorial não produziu roteiro válido")
+
+
 def editorial_script(edition, snapshot, selic_value, news, now):
     """Pesquisa, gera roteiro auditado e bloqueia a publicação em caso de falha."""
     api_key = os.getenv("GEMINI_API_KEY", "").strip()
@@ -500,7 +647,24 @@ DADOS INICIAIS PARA CONFERÊNCIA:
         print(f"Pesquisa editorial gerada com {research_model}.")
         return reviewed, audit
     except Exception as exc:
-        raise RuntimeError(f"episódio bloqueado pela camada editorial: {exc}") from exc
+        print(
+            "Provedor editorial principal indisponível; iniciando contingência "
+            f"do GitHub Models: {exc}"
+        )
+        try:
+            return github_models_editorial_script(
+                edition,
+                snapshot,
+                selic_value,
+                news,
+                now,
+                exc,
+            )
+        except Exception as fallback_exc:
+            raise RuntimeError(
+                "episódio bloqueado: provedor principal falhou "
+                f"({exc}); contingência também falhou ({fallback_exc})"
+            ) from fallback_exc
 
 
 def br_number(value, decimals=2):
