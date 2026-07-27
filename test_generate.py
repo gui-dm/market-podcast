@@ -3,7 +3,7 @@ from datetime import datetime
 
 from zoneinfo import ZoneInfo
 
-from editorial_validation import validate_episode
+from editorial_validation import normalize_audit, validate_audit, validate_episode
 
 TZ = ZoneInfo("America/Sao_Paulo")
 
@@ -39,6 +39,13 @@ class EpisodeValidationTests(unittest.TestCase):
     def test_accepts_complete_opening(self):
         validate_episode("abertura", valid_script(), valid_audit(), self.now)
 
+    def test_normalizes_unambiguous_date_without_year(self):
+        audit = valid_audit()
+        audit[0]["data"] = "24/07"
+        normalized = normalize_audit(audit, self.now)
+        self.assertEqual(normalized[0]["data"], "24/07/2026")
+        validate_audit(normalized, self.now)
+
     def test_blocks_missing_audit(self):
         with self.assertRaisesRegex(ValueError, "ficha de auditoria ausente"):
             validate_episode("abertura", valid_script(), [], self.now)
@@ -56,6 +63,18 @@ class EpisodeValidationTests(unittest.TestCase):
     def test_blocks_wrong_closing_greeting(self):
         with self.assertRaisesRegex(ValueError, "saudação inválida"):
             validate_episode("fechamento", valid_script(), valid_audit(), self.now)
+
+    def test_blocks_audit_without_explicit_year_after_normalization(self):
+        audit = valid_audit()
+        audit[0]["data"] = "24 de julho"
+        with self.assertRaisesRegex(ValueError, "sem ano explícito"):
+            validate_audit(normalize_audit(audit, self.now), self.now)
+
+    def test_blocks_invalid_source_url(self):
+        audit = valid_audit()
+        audit[0]["url"] = "Yahoo Finance"
+        with self.assertRaisesRegex(ValueError, "URL inválida"):
+            validate_audit(audit, self.now)
 
 
 if __name__ == "__main__":
