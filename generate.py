@@ -20,6 +20,7 @@ from PIL import Image, ImageDraw, ImageFont
 from zoneinfo import ZoneInfo
 
 from editorial_validation import normalize_audit, validate_audit, validate_episode
+from feed_logic import load_episode_metadata
 from gemini_client import configured_models, request_with_fallback
 from github_models_client import configured_github_models, request_text
 
@@ -775,9 +776,10 @@ def rebuild_feed(config):
     ET.SubElement(channel, "{http://www.itunes.com/dtds/podcast-1.0.dtd}author").text = config["author"]
     ET.SubElement(channel, "{http://www.itunes.com/dtds/podcast-1.0.dtd}explicit").text = "false"
     ET.SubElement(channel, "{http://www.itunes.com/dtds/podcast-1.0.dtd}image", {"href": f"{base}/cover.png"})
-    meta_files = sorted(EPISODES.glob("*.json"), reverse=True)[: config["max_episodes"]]
-    for meta_path in meta_files:
-        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    for _meta_path, meta in load_episode_metadata(
+        EPISODES,
+        config["max_episodes"],
+    ):
         item = ET.SubElement(channel, "item")
         for tag, text in [("title", meta["title"]), ("description", meta["description"]), ("guid", meta["guid"]), ("pubDate", meta["pub_date"])]:
             ET.SubElement(item, tag).text = text
