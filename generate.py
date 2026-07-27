@@ -6,7 +6,6 @@ import json
 import math
 import os
 import re
-import time
 import uuid
 from datetime import datetime, timedelta, timezone
 from email.utils import format_datetime
@@ -21,6 +20,7 @@ from PIL import Image, ImageDraw, ImageFont
 from zoneinfo import ZoneInfo
 
 from editorial_validation import normalize_audit, validate_audit, validate_episode
+from gemini_client import configured_models, request_with_fallback
 
 ROOT = Path(__file__).resolve().parent
 DOCS = ROOT / "docs"
@@ -244,30 +244,13 @@ EDITORIAL_SCHEMA = {
 }
 
 
-def gemini_request(url, headers, payload, attempts=3):
-    """Repete falhas transitórias; erros editoriais continuam bloqueantes."""
-    last_error = None
-    for attempt in range(1, attempts + 1):
-        try:
-            response = requests.post(
-                url,
-                headers=headers,
-                json=payload,
-                timeout=90,
-            )
-            response.raise_for_status()
-            return response.json()
-        except (requests.RequestException, ValueError) as exc:
-            last_error = exc
-            if attempt == attempts:
-                break
-            wait_seconds = attempt * 2
-            print(
-                f"Gemini indisponível na tentativa {attempt}/{attempts}; "
-                f"nova tentativa em {wait_seconds}s: {exc}"
-            )
-            time.sleep(wait_seconds)
-    raise RuntimeError(f"Gemini falhou após {attempts} tentativas: {last_error}")
+def gemini_request(api_key, payload, models):
+    return request_with_fallback(
+        api_key,
+        payload,
+        requests.post,
+        models=models,
+    )
 
 
 def response_text(response_data):
@@ -318,7 +301,7 @@ def canonicalize_script(edition, text):
     return f"{greeting}. {reviewed}\n\n{disclaimer}"
 
 
-def review_script(url, headers, edition, facts, script, audit, now):
+def review_script(api_key, models, edition, facts, script, audit, now):
     candidate = script
     validation_feedback = ""
     for attempt in range(1, 3):
@@ -354,13 +337,18 @@ ROTEIRO A REVISAR:
             "contents": [{"parts": [{"text": review_prompt}]}],
             "generationConfig": {
                 "maxOutputTokens": 3200,
-                "thinkingConfig": {"thinkingLevel": "minimal"},
             },
         }
+        review_response, review_model = gemini_request(
+            api_key,
+            review_payload,
+            models,
+        )
         reviewed = canonicalize_script(
             edition,
-            response_text(gemini_request(url, headers, review_payload)),
+            response_text(review_response),
         )
+        print(f"Revisão editorial executada com {review_model}.")
         try:
             validate_episode(edition, reviewed, audit, now)
             return reviewed
@@ -461,21 +449,18 @@ DADOS INICIAIS PARA CONFERÊNCIA:
 {json.dumps(facts, ensure_ascii=False, default=str)}
 """.strip()
 
-    model = os.getenv("GEMINI_MODEL", "gemini-3-flash-preview").strip()
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-    headers = {"x-goog-api-key": api_key, "Content-Type": "application/json"}
+    models = configured_models()
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
         "tools": [{"google_search": {}}],
         "generationConfig": {
             "maxOutputTokens": 5000,
-            "thinkingConfig": {"thinkingLevel": "minimal"},
             "responseMimeType": "application/json",
             "responseSchema": EDITORIAL_SCHEMA,
         },
     }
     try:
-        research_response = gemini_request(url, headers, payload)
+        research_response, research_model = gemini_request(api_key, payload, models)
         queries = grounded_search_queries(research_response)
         if not queries:
             raise ValueError("Google Search não foi executado; pesquisa obrigatória ausente")
@@ -499,9 +484,20 @@ DADOS INICIAIS PARA CONFERÊNCIA:
             f"Pesquisa executada com {len(queries)} consulta(s); "
             f"auditoria recebida com {len(audit)} item(ns)."
         )
-        reviewed = review_script(url, headers, edition, facts, script, audit, now)
+        review_models = [research_model] + [
+            model for model in models if model != research_model
+        ]
+        reviewed = review_script(
+            api_key,
+            review_models,
+            edition,
+            facts,
+            script,
+            audit,
+            now,
+        )
         print(f"Roteiro editorial revisado com {len(reviewed)} caracteres.")
-        print(f"Roteiro editorial gerado com {model}.")
+        print(f"Pesquisa editorial gerada com {research_model}.")
         return reviewed, audit
     except Exception as exc:
         raise RuntimeError(f"episódio bloqueado pela camada editorial: {exc}") from exc
