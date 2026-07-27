@@ -6,6 +6,7 @@ import json
 import math
 import os
 import re
+import time
 import uuid
 from datetime import datetime, timedelta, timezone
 from email.utils import format_datetime
@@ -19,7 +20,7 @@ import yfinance as yf
 from PIL import Image, ImageDraw, ImageFont
 from zoneinfo import ZoneInfo
 
-from editorial_validation import validate_episode
+from editorial_validation import normalize_audit, validate_audit, validate_episode
 
 ROOT = Path(__file__).resolve().parent
 DOCS = ROOT / "docs"
@@ -113,7 +114,7 @@ def market_snapshot(edition):
             if edition == "abertura" and quote_kind == "intradiária" and abs(change) > max_opening_move:
                 change = None
             timestamp = hist.index[-1]
-            reference_date = timestamp.strftime("%d/%m") if hasattr(timestamp, "strftime") else ""
+            reference_date = timestamp.strftime("%d/%m/%Y") if hasattr(timestamp, "strftime") else ""
             collected_at = datetime.now(TZ).isoformat()
             result[label] = {
                 "value": last, "change": change, "previous": previous,
@@ -206,8 +207,176 @@ def headlines(limit=8, usd_value=None, now=None, edition="abertura"):
     return items[:limit]
 
 
-def editorial_script(edition, snapshot, selic_value, news, now, fallback):
-    """Gera roteiro e auditoria estruturados. Falhas impedem a publicação."""
+EDITORIAL_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "roteiro": {"type": "string"},
+        "auditoria": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "tipo": {"type": "string", "enum": ["cotacao", "noticia", "agenda"]},
+                    "item": {"type": "string"},
+                    "valor_ou_fato": {"type": "string"},
+                    "data": {"type": "string"},
+                    "horario": {"type": "string"},
+                    "instrumento": {"type": "string"},
+                    "fonte": {"type": "string"},
+                    "url": {"type": "string"},
+                },
+                "required": [
+                    "tipo",
+                    "item",
+                    "valor_ou_fato",
+                    "data",
+                    "horario",
+                    "instrumento",
+                    "fonte",
+                    "url",
+                ],
+            },
+        },
+        "aprovado": {"type": "boolean"},
+        "erros": {"type": "array", "items": {"type": "string"}},
+    },
+    "required": ["roteiro", "auditoria", "aprovado", "erros"],
+}
+
+
+def gemini_request(url, headers, payload, attempts=3):
+    """Repete falhas transitórias; erros editoriais continuam bloqueantes."""
+    last_error = None
+    for attempt in range(1, attempts + 1):
+        try:
+            response = requests.post(
+                url,
+                headers=headers,
+                json=payload,
+                timeout=90,
+            )
+            response.raise_for_status()
+            return response.json()
+        except (requests.RequestException, ValueError) as exc:
+            last_error = exc
+            if attempt == attempts:
+                break
+            wait_seconds = attempt * 2
+            print(
+                f"Gemini indisponível na tentativa {attempt}/{attempts}; "
+                f"nova tentativa em {wait_seconds}s: {exc}"
+            )
+            time.sleep(wait_seconds)
+    raise RuntimeError(f"Gemini falhou após {attempts} tentativas: {last_error}")
+
+
+def response_text(response_data):
+    candidates = response_data.get("candidates", [])
+    if not candidates:
+        raise ValueError("Gemini não retornou candidato")
+    parts = candidates[0].get("content", {}).get("parts", [])
+    text = "".join(str(part.get("text", "")) for part in parts).strip()
+    if not text:
+        raise ValueError("Gemini retornou resposta vazia")
+    return re.sub(r"^```(?:json)?\s*|\s*```$", "", text, flags=re.IGNORECASE)
+
+
+def grounded_search_queries(response_data):
+    candidates = response_data.get("candidates", [])
+    if not candidates:
+        return []
+    metadata = candidates[0].get("groundingMetadata", {})
+    return metadata.get("webSearchQueries", [])
+
+
+def canonicalize_script(edition, text):
+    reviewed = re.sub(
+        r"^(?:\s*(?:Bom dia|Boa noite)\.?\s*)+",
+        "",
+        text,
+        flags=re.IGNORECASE,
+    )
+    reviewed = re.sub(
+        r"(?:\s*(?:Bom dia|Boa noite)\.?\s*)+$",
+        "",
+        reviewed,
+        flags=re.IGNORECASE,
+    ).strip()
+    disclaimer = (
+        "Este conteúdo tem caráter exclusivamente informativo e não constitui "
+        "recomendação de investimento."
+    )
+    reviewed = re.sub(
+        r"\s*(?:As informações têm finalidade informativa e não representam "
+        r"recomendação de investimento|Este conteúdo tem caráter exclusivamente "
+        r"informativo e não constitui recomendação de investimento)\.?\s*$",
+        "",
+        reviewed,
+        flags=re.IGNORECASE,
+    ).strip()
+    greeting = "Bom dia" if edition == "abertura" else "Boa noite"
+    return f"{greeting}. {reviewed}\n\n{disclaimer}"
+
+
+def review_script(url, headers, edition, facts, script, audit, now):
+    candidate = script
+    validation_feedback = ""
+    for attempt in range(1, 3):
+        review_prompt = f"""
+Atue como revisor factual do Market Brief Brasil. Reescreva o roteiro abaixo
+mantendo apenas afirmações sustentadas pelos DADOS AUTORIZADOS e pela FICHA DE
+AUDITORIA. Esta é a tentativa {attempt} de 2.
+
+REGRAS:
+- Não acrescente nenhum fato, agente, fluxo, expectativa, número ou causa.
+- Uma causalidade só pode permanecer quando estiver sustentada pela auditoria.
+- Caso a relação seja apenas simultânea, use "em meio a" ou "ao mesmo tempo".
+- Preserve números, datas, horários, instrumentos e a diferença entre cotação
+  atual, ajuste, último negócio e fechamento.
+- Se uma direção não estiver confirmada, omita a direção; não tente conciliá-la.
+- Produza de 450 a 650 palavras, em texto corrido natural para áudio.
+- Comece exatamente com {"Bom dia." if edition == "abertura" else "Boa noite."}.
+- Termine exatamente com o aviso informativo presente no roteiro.
+- Não use Markdown, links, listas ou comentários.
+{validation_feedback}
+
+EDIÇÃO: {edition}
+DADOS AUTORIZADOS:
+{json.dumps(facts, ensure_ascii=False, default=str)}
+
+FICHA DE AUDITORIA:
+{json.dumps(audit, ensure_ascii=False, default=str)}
+
+ROTEIRO A REVISAR:
+{candidate}
+""".strip()
+        review_payload = {
+            "contents": [{"parts": [{"text": review_prompt}]}],
+            "generationConfig": {
+                "maxOutputTokens": 3200,
+                "thinkingConfig": {"thinkingLevel": "minimal"},
+            },
+        }
+        reviewed = canonicalize_script(
+            edition,
+            response_text(gemini_request(url, headers, review_payload)),
+        )
+        try:
+            validate_episode(edition, reviewed, audit, now)
+            return reviewed
+        except ValueError as exc:
+            if attempt == 2:
+                raise
+            validation_feedback = (
+                "\nA versão anterior foi reprovada pelo validador local: "
+                f"{exc}. Corrija somente esses pontos sem introduzir fatos."
+            )
+            candidate = reviewed
+    raise RuntimeError("revisor não produziu roteiro válido")
+
+
+def editorial_script(edition, snapshot, selic_value, news, now):
+    """Pesquisa, gera roteiro auditado e bloqueia a publicação em caso de falha."""
     api_key = os.getenv("GEMINI_API_KEY", "").strip()
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY ausente; episódio bloqueado antes do áudio")
@@ -232,23 +401,19 @@ def editorial_script(edition, snapshot, selic_value, news, now, fallback):
 Você é o editor-chefe e roteirista do Market Brief Brasil. Produza a edição de
 {edition} de {now:%d/%m/%Y}, executada às {now:%H:%M} no fuso America/Sao_Paulo.
 
-Entregue APENAS JSON válido neste formato:
-{{
-  "roteiro": "texto corrido pronto para narração",
-  "auditoria": [
-    {{"tipo":"cotacao|noticia|agenda","item":"...", "valor_ou_fato":"...",
-      "data":"...", "horario":"...", "instrumento":"...", "fonte":"...", "url":"..."}}
-  ],
-  "aprovado": true,
-  "erros": []
-}}
+Antes de escrever, use obrigatoriamente a ferramenta Google Search para verificar
+as cotações, notícias e a agenda. Os DADOS INICIAIS abaixo são pistas de pesquisa,
+não autorização para repetir um número sem confirmação na web.
 
 OBJETIVO DA EDIÇÃO:
 {objective}
 
 REGRAS OBRIGATÓRIAS:
-- Use exclusivamente os fatos fornecidos abaixo. Não complete lacunas com memória.
-- Cada número narrado deve possuir na auditoria data, horário, instrumento, fonte e URL.
+- Não use memória para dados atuais. Abra e confronte fontes antes de escrever.
+- Priorize fontes oficiais, Reuters, bolsas e provedores financeiros reconhecidos.
+- Confirme cada cotação essencial em duas fontes independentes quando possível.
+- Cada número narrado deve possuir na auditoria data no formato DD/MM/AAAA,
+  horário aproximado, instrumento exato, fonte e URL.
 - Se um dado não puder ser confirmado, diga que não encontrou confirmação ou omita-o.
 - Não trate o fechamento anterior como movimento de hoje.
 - Na abertura, não chame PTAX, dólar futuro ou futuro de Ibovespa de cotação atual
@@ -271,6 +436,7 @@ REGRAS OBRIGATÓRIAS:
 - Preserve a diferença entre cotação em tempo real e último fechamento disponível.
 - O roteiro não deve conter Markdown, links, ficha de auditoria nem instruções de locução.
 - Comece com Bom dia na abertura e Boa noite no fechamento.
+- Produza de 450 a 650 palavras. A revisão local reprova menos de 360 palavras.
 - Termine exatamente com: "Este conteúdo tem caráter exclusivamente informativo e
   não constitui recomendação de investimento."
 
@@ -284,126 +450,56 @@ gancho; placar do pregão; empresas e catalisadores confirmados; macro do dia;
 exterior no horário da consulta sem chamar mercado aberto de fechamento; agenda
 confirmada de amanhã; pergunta central para o próximo pregão.
 
-CRITÉRIOS DE REPROVAÇÃO:
+CRITÉRIOS DE REPROVAÇÃO AUTOMÁTICA:
 data incorreta; cotação essencial sem fonte ou horário; mistura de instrumentos;
 direção contraditória; contratos diferentes usados numa variação; notícia antiga
 tratada como fato novo; agenda na data errada; causalidade sem sustentação; menos
 de 360 palavras; ausência do aviso final. Se ocorrer qualquer um deles, marque
 "aprovado": false e liste os erros. É preferível bloquear a publicação.
 
-DADOS DISPONÍVEIS:
+DADOS INICIAIS PARA CONFERÊNCIA:
 {json.dumps(facts, ensure_ascii=False, default=str)}
-
-RASCUNHO DE SEGURANÇA (pode ser reorganizado, sem acrescentar fatos):
-{fallback}
 """.strip()
 
     model = os.getenv("GEMINI_MODEL", "gemini-3-flash-preview").strip()
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+    headers = {"x-goog-api-key": api_key, "Content-Type": "application/json"}
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
+        "tools": [{"google_search": {}}],
         "generationConfig": {
-            "maxOutputTokens": 3000,
+            "maxOutputTokens": 5000,
             "thinkingConfig": {"thinkingLevel": "minimal"},
+            "responseMimeType": "application/json",
+            "responseSchema": EDITORIAL_SCHEMA,
         },
     }
     try:
-        response = requests.post(
-            url,
-            headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
-            json=payload,
-            timeout=60,
-        )
-        response.raise_for_status()
-        candidates = response.json().get("candidates", [])
-        text = candidates[0]["content"]["parts"][0]["text"].strip() if candidates else ""
-        text = re.sub(r"^```(?:json)?\s*|\s*```$", "", text, flags=re.IGNORECASE)
-        result = json.loads(text)
+        research_response = gemini_request(url, headers, payload)
+        queries = grounded_search_queries(research_response)
+        if not queries:
+            raise ValueError("Google Search não foi executado; pesquisa obrigatória ausente")
+        result = json.loads(response_text(research_response))
         script = str(result.get("roteiro", "")).strip()
-        audit = result.get("auditoria", [])
+        audit = normalize_audit(result.get("auditoria", []), now)
         if not result.get("aprovado", False):
-            raise ValueError("auditoria editorial reprovou: " + "; ".join(result.get("erros", [])))
-        validate_episode(edition, script, audit, now)
-        print(f"Resposta editorial e auditoria recebidas: {len(script)} caracteres.")
-
-        review_prompt = f"""
-Atue como revisor factual de um podcast financeiro. Reescreva o roteiro abaixo
-mantendo apenas afirmações sustentadas pelos DADOS AUTORIZADOS.
-
-REGRAS:
-- Não acrescente nenhum fato, agente, fluxo de capital, expectativa ou causa.
-- Uma relação de causa e efeito só pode permanecer quando estiver explicitamente
-  declarada em uma das manchetes autorizadas.
-- Caso a relação seja apenas simultânea, use "em meio a" ou "ao mesmo tempo".
-- Não transforme "tarifas" em impostos ou mudanças tributárias sem essa informação.
-- A edição de abertura deve começar exatamente com "Bom dia.".
-- A edição de fechamento deve começar exatamente com "Boa noite.".
-- Remova qualquer saudação adicional no final.
-- Preserve números, datas e distinção entre cotação atual e último fechamento.
-- A direção dos ativos deve vir somente de "cotacoes"; manchetes não podem
-  determinar se um ativo sobe ou cai.
-- Se "change" for nulo ou houver conflito entre cotação e manchete, não atribua
-  direção ao ativo e não tente conciliar versões contraditórias.
-- Preserve uma narração completa de 450 a 650 palavras; não resuma em tópicos.
-- Mantenha uma conclusão com o que observar no próximo pregão.
-- Entregue somente a narração revisada, sem Markdown ou comentários.
-
-EDIÇÃO: {edition}
-DADOS AUTORIZADOS:
-{json.dumps(facts, ensure_ascii=False, default=str)}
-
-ROTEIRO A REVISAR:
-{script}
-""".strip()
-        review_payload = {
-            "contents": [{"parts": [{"text": review_prompt}]}],
-            "generationConfig": {
-                "maxOutputTokens": 3000,
-                "thinkingConfig": {"thinkingLevel": "minimal"},
-            },
-        }
-        review_response = requests.post(
-            url,
-            headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
-            json=review_payload,
-            timeout=60,
+            model_errors = [str(error) for error in result.get("erros", [])]
+            non_recoverable = [
+                error for error in model_errors
+                if not re.search(r"palavr|curt|extens|dura", error, flags=re.IGNORECASE)
+            ]
+            if non_recoverable:
+                raise ValueError(
+                    "auditoria editorial reprovou: " + "; ".join(non_recoverable)
+                )
+        if not script:
+            raise ValueError("roteiro editorial vazio")
+        validate_audit(audit, now)
+        print(
+            f"Pesquisa executada com {len(queries)} consulta(s); "
+            f"auditoria recebida com {len(audit)} item(ns)."
         )
-        review_response.raise_for_status()
-        review_candidates = review_response.json().get("candidates", [])
-        reviewed = (
-            review_candidates[0]["content"]["parts"][0]["text"].strip()
-            if review_candidates else ""
-        )
-        if len(reviewed) < 1800:
-            raise ValueError(f"revisão factual curta demais: {len(reviewed)} caracteres")
-
-        reviewed = re.sub(
-            r"^(?:\s*(?:Bom dia|Boa noite)\.?\s*)+",
-            "",
-            reviewed,
-            flags=re.IGNORECASE,
-        )
-        reviewed = re.sub(
-            r"(?:\s*(?:Bom dia|Boa noite)\.?\s*)+$",
-            "",
-            reviewed,
-            flags=re.IGNORECASE,
-        ).strip()
-        disclaimer = (
-            "Este conteúdo tem caráter exclusivamente informativo e não constitui "
-            "recomendação de investimento."
-        )
-        reviewed = re.sub(
-            r"\s*(?:As informações têm finalidade informativa e não representam "
-            r"recomendação de investimento|Este conteúdo tem caráter exclusivamente "
-            r"informativo e não constitui recomendação de investimento)\.?\s*$",
-            "",
-            reviewed,
-            flags=re.IGNORECASE,
-        ).strip()
-        greeting = "Bom dia" if opening else "Boa noite"
-        reviewed = f"{greeting}. {reviewed}\n\n{disclaimer}"
-        validate_episode(edition, reviewed, audit, now)
+        reviewed = review_script(url, headers, edition, facts, script, audit, now)
         print(f"Roteiro editorial revisado com {len(reviewed)} caracteres.")
         print(f"Roteiro editorial gerado com {model}.")
         return reviewed, audit
@@ -553,8 +649,7 @@ def main():
         now=now,
         edition=args.edition,
     )
-    fallback = build_script(args.edition, snapshot, selic_value, news, now)
-    script, audit = editorial_script(args.edition, snapshot, selic_value, news, now, fallback)
+    script, audit = editorial_script(args.edition, snapshot, selic_value, news, now)
     slug = f"{now:%Y-%m-%d}-{args.edition}"
     audit_path = EPISODES / f"{slug}-auditoria.json"
     audit_path.write_text(
