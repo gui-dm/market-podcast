@@ -1,0 +1,187 @@
+{
+  "edition": "fechamento",
+  "generated_at": "2026-07-27T18:13:31.020761-03:00",
+  "approved": true,
+  "items": [
+    {
+      "tipo": "cotacao",
+      "item": "Ibovespa",
+      "valor_ou_fato": "{\"valor\": 175334.453125, \"variacao_percentual\": 0.7426099016329291, \"referencia\": \"último fechamento\"}",
+      "data": "27/07/2026",
+      "horario": "18:13",
+      "instrumento": "^BVSP",
+      "fonte": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/quote/^BVSP"
+    },
+    {
+      "tipo": "cotacao",
+      "item": "Dólar",
+      "valor_ou_fato": "{\"valor\": 5.111000061035156, \"variacao_percentual\": 0.2766402088731912, \"referencia\": \"último fechamento\"}",
+      "data": "27/07/2026",
+      "horario": "18:13",
+      "instrumento": "BRL=X",
+      "fonte": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/quote/BRL=X"
+    },
+    {
+      "tipo": "cotacao",
+      "item": "Treasury de 10 anos",
+      "valor_ou_fato": "{\"valor\": 4.640999794006348, \"variacao_percentual\": -0.8121416460145969, \"referencia\": \"último fechamento\"}",
+      "data": "27/07/2026",
+      "horario": "18:13",
+      "instrumento": "^TNX",
+      "fonte": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/quote/^TNX"
+    },
+    {
+      "tipo": "cotacao",
+      "item": "Petróleo Brent",
+      "valor_ou_fato": "{\"valor\": 87.68000030517578, \"variacao_percentual\": -9.40276770913513, \"referencia\": \"último fechamento\"}",
+      "data": "27/07/2026",
+      "horario": "18:13",
+      "instrumento": "BZ=F",
+      "fonte": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/quote/BZ=F"
+    },
+    {
+      "tipo": "cotacao",
+      "item": "Ouro",
+      "valor_ou_fato": "{\"valor\": 4078.60009765625, \"variacao_percentual\": 0.27042973094475453, \"referencia\": \"último fechamento\"}",
+      "data": "27/07/2026",
+      "horario": "18:13",
+      "instrumento": "GC=F",
+      "fonte": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/quote/GC=F"
+    },
+    {
+      "tipo": "cotacao",
+      "item": "Minério de ferro",
+      "valor_ou_fato": "{\"valor\": 98.41999816894531, \"variacao_percentual\": -0.0507799849070123, \"referencia\": \"último fechamento\"}",
+      "data": "24/07/2026",
+      "horario": "18:13",
+      "instrumento": "TIO=F",
+      "fonte": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/quote/TIO=F"
+    },
+    {
+      "tipo": "cotacao",
+      "item": "Vale",
+      "valor_ou_fato": "{\"valor\": 75.69000244140625, \"variacao_percentual\": 0.5980922254297472, \"referencia\": \"último fechamento\"}",
+      "data": "27/07/2026",
+      "horario": "18:13",
+      "instrumento": "VALE3.SA",
+      "fonte": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/quote/VALE3.SA"
+    },
+    {
+      "tipo": "cotacao",
+      "item": "Petrobras",
+      "valor_ou_fato": "{\"valor\": 41.0099983215332, \"variacao_percentual\": -2.8429300852102712, \"referencia\": \"último fechamento\"}",
+      "data": "27/07/2026",
+      "horario": "18:13",
+      "instrumento": "PETR4.SA",
+      "fonte": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/quote/PETR4.SA"
+    },
+    {
+      "tipo": "cotacao",
+      "item": "S&P 500",
+      "valor_ou_fato": "{\"valor\": 7413.18017578125, \"variacao_percentual\": 0.01619264104413265, \"referencia\": \"último fechamento\"}",
+      "data": "27/07/2026",
+      "horario": "18:13",
+      "instrumento": "^GSPC",
+      "fonte": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/quote/^GSPC"
+    },
+    {
+      "tipo": "cotacao",
+      "item": "Nasdaq",
+      "valor_ou_fato": "{\"valor\": 24932.08203125, \"variacao_percentual\": -0.17512250129422258, \"referencia\": \"último fechamento\"}",
+      "data": "27/07/2026",
+      "horario": "18:13",
+      "instrumento": "^IXIC",
+      "fonte": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/quote/^IXIC"
+    },
+    {
+      "tipo": "cotacao",
+      "item": "Selic vigente",
+      "valor_ou_fato": "14.15% ao ano",
+      "data": "27/07/2026",
+      "horario": "18:13",
+      "instrumento": "BCB SGS 1178",
+      "fonte": "Banco Central do Brasil",
+      "url": "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1178/dados/ultimos/1?formato=json"
+    },
+    {
+      "tipo": "noticia",
+      "item": "Ibovespa Hoje Ao Vivo: Bolsa recupera os 175 mil e dólar sobe; PETR4 cai com petróleo",
+      "valor_ou_fato": "Ibovespa Hoje Ao Vivo: Bolsa recupera os 175 mil e dólar sobe; PETR4 cai com petróleo",
+      "data": "27/07/2026",
+      "horario": "12:02",
+      "instrumento": "notícia",
+      "fonte": "InfoMoney",
+      "url": "https://news.google.com/rss/articles/CBMijwFBVV95cUxQVWY2WXVCQVJDem5fMU1wcHVBMUQ0cHdpb1ZpSzFTRVY4U0IxMWJiak0tMDR4d3NvOTFRQ2trZnV0djNiaEpyaFY3ckFOWWZiYWtBSTNVUnJoQmRxU1BHVGowVEE3V0d5cUFGQkxZM0I1RHYzMTlNRjJOUlcyOVlsSHp2N2xjV3hmZ1FqQ05xUQ?oc=5"
+    },
+    {
+      "tipo": "noticia",
+      "item": "Dólar e Ibovespa sobem com sinais de trégua EUA-Irã no radar",
+      "valor_ou_fato": "Dólar e Ibovespa sobem com sinais de trégua EUA-Irã no radar",
+      "data": "27/07/2026",
+      "horario": "10:15",
+      "instrumento": "notícia",
+      "fonte": "CNN Brasil",
+      "url": "https://news.google.com/rss/articles/CBMimgFBVV95cUxNWmVHb3ItQ3ZXUEV6NktfRHpuX0FFYWE4ai00eE11U29UdXk4S1BJc3c2U3FUT3VRcWEwQy04cmpiTHdGYWFLN1V5NUFRNzBraXUwcTMyR2t2bGJJaVNibU96bEhqNlR0YUUxQnYycUwtTFVYUXNrNENLd2ZucTRoLXQxX0dVeF9RM21Jalo2VE5XZXA3WVRHR1Nn?oc=5"
+    },
+    {
+      "tipo": "noticia",
+      "item": "Petróleo amplia perdas com declarações de Trump sobre negociação com Irã",
+      "valor_ou_fato": "Petróleo amplia perdas com declarações de Trump sobre negociação com Irã",
+      "data": "27/07/2026",
+      "horario": "14:07",
+      "instrumento": "notícia",
+      "fonte": "Valor Econômico",
+      "url": "https://news.google.com/rss/articles/CBMi2AFBVV95cUxNTk5SSnVZNHZpZUdBSjY4WUYwam15T3czbmZKMDJlRVphWEVkcEVrenZvalp6Z3piVmItVVNEaUh2UVZ6OERUY1pObU5BSkZHY2dpVlAwYk54SC1HMWJIcmVXQkc4RVMzV1p2YjhkbUNLZ3htQndWTUEyV2R5anFRVnlzNHMyRy00NVBuX1F0LWNvemVVUlREVVNkeUhJMEVuRmxZSEV5cTZQZFVJUGRiQm84NDdOWmQ2TmF2OHVBYW9kMW90aGdPR2owQ1ltU2RNX2R6OVZQYTjSAdgBQVVfeXFMTU5OUkp1WTR2aWVHQUo2OFlGMGpteU93M25mSjAyZUVaYVhFZHBFa3p2b2paemd6YlZiLVVTRGlIdlFWejhEVGNaTm1OQUpGR2NnaVZQMGJOeEgtRzFiSHJlV0JHOEVTM1dadmI4ZG1DS2d4bUJ3Vk1BMldkeWpxUVZ5czRzMkctNDVQbl9RdC1jb3plVVJURFVTZHlISTBFbkZsWUhFeXE2UGRVSVBkYkJvODQ3TlpkNk5hdjh1QWFvZDFvdGhnT0dqMENZbVNkTV9kejlWUGE4?oc=5"
+    },
+    {
+      "tipo": "noticia",
+      "item": "Ibovespa sobe e dólar avança a R$ 5,10 após pausa nos ataques entre EUA e Irã",
+      "valor_ou_fato": "Ibovespa sobe e dólar avança a R$ 5,10 após pausa nos ataques entre EUA e Irã",
+      "data": "27/07/2026",
+      "horario": "11:22",
+      "instrumento": "notícia",
+      "fonte": "Bloomberg Línea Brasil",
+      "url": "https://news.google.com/rss/articles/CBMiuwFBVV95cUxQRjNJaFQtLTFXUC15cmxuaDVkOW4weGxsNDRtT2FfV3E2QkJSVE1ab1RKeUhzWDlTOHBiMUJ1R2UyRG5WSUxwcEVRR3hkZXBGVzlKR18yRGRHSmRCZXNSRDd0ZHRsemlBc2tHVk1iNjROQ1poNU0xQ2xTWXloRElmbllzeUJpRm1jVWoyQXVPcXBPYmlPVHJCRmtjaWYwM243TlpHQmdPMFlSZGVpWTlaUzJqV1lPUTlFcEIw0gHPAUFVX3lxTFBHa1hWSFJ6dHRBbC1qYUVJVDVkOEZ6UUJzZ1lwWTZ3RlVPODlhNEpDSERJMVVETU82dG1YRExnSVZqMGo2V0xWT1BEY3U2U0pFVUdKdmg1R3lBOU9WX19yMWNPeTVvZWt5M3hXLUY5NVNicmQtRmk2WVBuY1l5bDE3aFJLVlQ5ckQzcVBJWU1ON0ppRUVaTnJTeHZQUm1ueEh4N2I0ZVlPMmEyUUlSakM3dmtzZHQtb1g1UGRWajIyUkdBY1FvUjlVQTFNdnV5TQ?oc=5"
+    },
+    {
+      "tipo": "noticia",
+      "item": "Mercados hoje: decisão de juros nos EUA e dados de inflação no Brasil dividem atenções em semana de agenda cheia",
+      "valor_ou_fato": "Mercados hoje: decisão de juros nos EUA e dados de inflação no Brasil dividem atenções em semana de agenda cheia",
+      "data": "27/07/2026",
+      "horario": "09:19",
+      "instrumento": "notícia",
+      "fonte": "Bora Investir",
+      "url": "https://news.google.com/rss/articles/CBMi8gFBVV95cUxQX3NRWjkzRU1mNk9fWVdtNFg2SUtzY1hGaG5Db1pVWUgxb01YM2lEZ0pWRTFFU2Q1S3g4Q0x3X1hBMlVMS0xSTjctM2VVd2lxaUFPMEF5TlRTRGpZakI5X0ZyZ3ppSURueTE4LXZVRnVzZ3lpX0hGTERFTFRhVWxSZlBPU2lUblFwdjl2MTJuUU1CajB4aDgtbDFqbWx6Q2c0eHpnSExoMUM5QTVsOVhUY19PeWo2dmdzdjdPckpvQkk2QXRUU0lUcjdVY1hsdHByYTRMY1R1OUlIQTlwRUkzU2pwOWpaMmlUTFRpRmdrWjhFZw?oc=5"
+    },
+    {
+      "tipo": "noticia",
+      "item": "Petrobras acompanha baixa do petróleo e pressiona Ibovespa; dólar sobe",
+      "valor_ou_fato": "Petrobras acompanha baixa do petróleo e pressiona Ibovespa; dólar sobe",
+      "data": "27/07/2026",
+      "horario": "11:16",
+      "instrumento": "notícia",
+      "fonte": "Exame",
+      "url": "https://news.google.com/rss/articles/CBMipwFBVV95cUxNVFZhT2pfWjVuWnhqa0JCVmRhblpmNENLYTJzU3ExWGpkM2w3VDQzWkVoZ3QydktZTEZpR3dBNm4zVF81cS1xSUVPXzBvM0V4VWdybVBSMC1BYkFPMHNPRFBObUlrMjAwZEZzbFlMcTdJanJYcm9ISGYyV2NFR2R4RUdrbFppUkY2cWVOeFNuNDlUNWZ0cF9DQjRmamh4R09IWmhyMHpRdw?oc=5"
+    },
+    {
+      "tipo": "noticia",
+      "item": "Dólar sobe a R$ 5,11 com queda do petróleo e juros futuros em baixa",
+      "valor_ou_fato": "Dólar sobe a R$ 5,11 com queda do petróleo e juros futuros em baixa",
+      "data": "27/07/2026",
+      "horario": "17:50",
+      "instrumento": "notícia",
+      "fonte": "Times Brasil | CNBC",
+      "url": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxQS21HZG9icmJvbmdyMjNoNTgzcVowYmxSLUFrTnp4eVV6aFlKYkRRY2FFc0k4YlRrUEJFVklDcFNnZUd5cWF5T1lLUS1vTGdqX3BRZWtBdUxTa0t6RzFIZm13Z25KSUxmaWNFU0ExaWx4WDZDSmlSeFNGRmxVSFhMZVVreDlDQTdWU2Vud2d1bzFHVjVHLUt1YUdBWE05UEl5YmF1UE9BMXo?oc=5"
+    }
+  ]
+}
