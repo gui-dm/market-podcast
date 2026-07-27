@@ -2,12 +2,17 @@
 
 ## O que esta automação faz
 
-- Gera a edição de abertura às 07h45, horário de São Paulo, de segunda a sexta.
-- Gera a edição de fechamento às 18h15, horário de São Paulo, de segunda a sexta.
+- Tenta a edição de abertura a partir das 07h47, horário de São Paulo, de segunda a sexta.
+- Tenta a edição de fechamento a partir das 18h17, horário de São Paulo, de segunda a sexta.
+- Repete automaticamente a tentativa dentro da janela de cada edição se houver falha.
+- Não gera duplicidade quando MP3, roteiro, auditoria, metadados e RSS já estão completos.
 - Produz MP3, roteiro em texto e feed RSS.
 - Publica os arquivos pelo GitHub Pages.
 
-Os horários do GitHub Actions são aproximados e podem sofrer alguns minutos de atraso.
+O GitHub Actions é o agendador principal. Os minutos foram deslocados do início da
+hora para reduzir atrasos e descartes em horários de pico. Os sinais por issue
+`[scheduler] abertura` e `[scheduler] fechamento` permanecem como contingência
+independente.
 
 ## Ativação
 
@@ -42,6 +47,13 @@ variables → Actions → New repository secret**.
 - Valor: a chave criada no Google AI Studio
 
 Nunca coloque a chave diretamente em `generate.py`, `config.json` ou outro arquivo do
-repositório. Se a chave estiver ausente, inválida ou o limite gratuito for atingido, o
-workflow continua funcionando e publica automaticamente o roteiro determinístico.
+repositório. A geração usa Google Search no Gemini, registra uma ficha de auditoria e
+faz novas tentativas para falhas transitórias. Se a chave estiver ausente, inválida ou
+o conteúdo não passar nas travas factuais, o episódio não é publicado; a próxima
+execução da janela tenta novamente. Não existe fallback editorial sem pesquisa.
 
+## Comportamento dos sinais externos
+
+- O sinal é aceito apenas quando criado pelo proprietário do repositório e o título é exato.
+- Um sinal só é fechado quando o episódio já está completo ou foi publicado com sucesso.
+- Se a geração falhar, o sinal fica aberto e recebe o link da execução com o diagnóstico.
