@@ -1,0 +1,117 @@
+{
+  "edition": "abertura",
+  "generated_at": "2026-07-28T07:43:39.222024-03:00",
+  "approved": true,
+  "items": [
+    {
+      "tipo": "cotacao",
+      "item": "Ibovespa",
+      "valor_ou_fato": "{\"valor\": 175335.0, \"variacao_percentual\": 0.7429241217637106, \"referencia\": \"último fechamento\"}",
+      "data": "27/07/2026",
+      "horario": "07:43",
+      "instrumento": "^BVSP",
+      "fonte": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/quote/^BVSP"
+    },
+    {
+      "tipo": "cotacao",
+      "item": "Dólar",
+      "valor_ou_fato": "{\"valor\": 5.111000061035156, \"variacao_percentual\": -0.09773483716608578, \"referencia\": \"intradiária\"}",
+      "data": "28/07/2026",
+      "horario": "07:43",
+      "instrumento": "BRL=X",
+      "fonte": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/quote/BRL=X"
+    },
+    {
+      "tipo": "cotacao",
+      "item": "Treasury de 10 anos",
+      "valor_ou_fato": "{\"valor\": 4.640999794006348, \"variacao_percentual\": -0.8121416460145969, \"referencia\": \"intradiária\"}",
+      "data": "28/07/2026",
+      "horario": "07:43",
+      "instrumento": "^TNX",
+      "fonte": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/quote/^TNX"
+    },
+    {
+      "tipo": "cotacao",
+      "item": "Petróleo Brent",
+      "valor_ou_fato": "{\"valor\": 86.6500015258789, \"variacao_percentual\": -0.6079361980289022, \"referencia\": \"intradiária\"}",
+      "data": "28/07/2026",
+      "horario": "07:43",
+      "instrumento": "BZ=F",
+      "fonte": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/quote/BZ=F"
+    },
+    {
+      "tipo": "cotacao",
+      "item": "Ouro",
+      "valor_ou_fato": "{\"valor\": 4021.89990234375, \"variacao_percentual\": -0.6840229811465037, \"referencia\": \"intradiária\"}",
+      "data": "28/07/2026",
+      "horario": "07:43",
+      "instrumento": "GC=F",
+      "fonte": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/quote/GC=F"
+    },
+    {
+      "tipo": "cotacao",
+      "item": "Minério de ferro",
+      "valor_ou_fato": "{\"valor\": 98.3499984741211, \"variacao_percentual\": -0.07112344658253278, \"referencia\": \"último fechamento\"}",
+      "data": "27/07/2026",
+      "horario": "07:43",
+      "instrumento": "TIO=F",
+      "fonte": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/quote/TIO=F"
+    },
+    {
+      "tipo": "cotacao",
+      "item": "Vale",
+      "valor_ou_fato": "{\"valor\": 75.69000244140625, \"variacao_percentual\": 0.5980922254297472, \"referencia\": \"último fechamento\"}",
+      "data": "27/07/2026",
+      "horario": "07:43",
+      "instrumento": "VALE3.SA",
+      "fonte": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/quote/VALE3.SA"
+    },
+    {
+      "tipo": "cotacao",
+      "item": "Petrobras",
+      "valor_ou_fato": "{\"valor\": 41.0099983215332, \"variacao_percentual\": -2.8429300852102712, \"referencia\": \"último fechamento\"}",
+      "data": "27/07/2026",
+      "horario": "07:43",
+      "instrumento": "PETR4.SA",
+      "fonte": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/quote/PETR4.SA"
+    },
+    {
+      "tipo": "cotacao",
+      "item": "Futuro do S&P 500",
+      "valor_ou_fato": "{\"valor\": 7441.25, \"variacao_percentual\": 0.0067197527130913315, \"referencia\": \"intradiária\"}",
+      "data": "28/07/2026",
+      "horario": "07:43",
+      "instrumento": "ES=F",
+      "fonte": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/quote/ES=F"
+    },
+    {
+      "tipo": "cotacao",
+      "item": "Futuro do Nasdaq",
+      "valor_ou_fato": "{\"valor\": 27965.25, \"variacao_percentual\": -0.3048046843667329, \"referencia\": \"intradiária\"}",
+      "data": "28/07/2026",
+      "horario": "07:43",
+      "instrumento": "NQ=F",
+      "fonte": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/quote/NQ=F"
+    },
+    {
+      "tipo": "cotacao",
+      "item": "Selic vigente",
+      "valor_ou_fato": "14.15% ao ano",
+      "data": "28/07/2026",
+      "horario": "07:43",
+      "instrumento": "BCB SGS 1178",
+      "fonte": "Banco Central do Brasil",
+      "url": "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1178/dados/ultimos/1?formato=json"
+    }
+  ]
+}
