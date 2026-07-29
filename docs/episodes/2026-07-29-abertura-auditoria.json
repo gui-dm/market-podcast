@@ -1,0 +1,197 @@
+{
+  "edition": "abertura",
+  "generated_at": "2026-07-29T13:11:00.438109-03:00",
+  "approved": true,
+  "items": [
+    {
+      "tipo": "cotacao",
+      "item": "Ibovespa",
+      "valor_ou_fato": "{\"valor\": 174941.703125, \"variacao_percentual\": -0.9193763628125629, \"referencia\": \"último fechamento\"}",
+      "data": "29/07/2026",
+      "horario": "13:11",
+      "instrumento": "^BVSP",
+      "fonte": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/quote/^BVSP"
+    },
+    {
+      "tipo": "cotacao",
+      "item": "Dólar",
+      "valor_ou_fato": "{\"valor\": 5.13100004196167, \"variacao_percentual\": 0.09363354235150112, \"referencia\": \"intradiária\"}",
+      "data": "29/07/2026",
+      "horario": "13:11",
+      "instrumento": "BRL=X",
+      "fonte": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/quote/BRL=X"
+    },
+    {
+      "tipo": "cotacao",
+      "item": "Treasury de 10 anos",
+      "valor_ou_fato": "{\"valor\": 4.644999980926514, \"variacao_percentual\": 0.8905275533987123, \"referencia\": \"intradiária\"}",
+      "data": "29/07/2026",
+      "horario": "13:11",
+      "instrumento": "^TNX",
+      "fonte": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/quote/^TNX"
+    },
+    {
+      "tipo": "cotacao",
+      "item": "Petróleo Brent",
+      "valor_ou_fato": "{\"valor\": 90.83999633789062, \"variacao_percentual\": 3.4506307522386814, \"referencia\": \"intradiária\"}",
+      "data": "29/07/2026",
+      "horario": "13:11",
+      "instrumento": "BZ=F",
+      "fonte": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/quote/BZ=F"
+    },
+    {
+      "tipo": "cotacao",
+      "item": "Ouro",
+      "valor_ou_fato": "{\"valor\": 4066.5, \"variacao_percentual\": 1.1189854531891141, \"referencia\": \"intradiária\"}",
+      "data": "29/07/2026",
+      "horario": "13:11",
+      "instrumento": "GC=F",
+      "fonte": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/quote/GC=F"
+    },
+    {
+      "tipo": "cotacao",
+      "item": "Minério de ferro",
+      "valor_ou_fato": "{\"valor\": 98.30000305175781, \"variacao_percentual\": -0.050834187228210315, \"referencia\": \"último fechamento\"}",
+      "data": "28/07/2026",
+      "horario": "13:11",
+      "instrumento": "TIO=F",
+      "fonte": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/quote/TIO=F"
+    },
+    {
+      "tipo": "cotacao",
+      "item": "Vale",
+      "valor_ou_fato": "{\"valor\": 74.81999969482422, \"variacao_percentual\": -1.149428879006209, \"referencia\": \"último fechamento\"}",
+      "data": "29/07/2026",
+      "horario": "13:11",
+      "instrumento": "VALE3.SA",
+      "fonte": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/quote/VALE3.SA"
+    },
+    {
+      "tipo": "cotacao",
+      "item": "Petrobras",
+      "valor_ou_fato": "{\"valor\": 42.290000915527344, \"variacao_percentual\": 2.6207276269064828, \"referencia\": \"último fechamento\"}",
+      "data": "29/07/2026",
+      "horario": "13:11",
+      "instrumento": "PETR4.SA",
+      "fonte": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/quote/PETR4.SA"
+    },
+    {
+      "tipo": "cotacao",
+      "item": "Futuro do S&P 500",
+      "valor_ou_fato": "{\"valor\": 7389.25, \"variacao_percentual\": -0.7788109704924606, \"referencia\": \"intradiária\"}",
+      "data": "29/07/2026",
+      "horario": "13:11",
+      "instrumento": "ES=F",
+      "fonte": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/quote/ES=F"
+    },
+    {
+      "tipo": "cotacao",
+      "item": "Futuro do Nasdaq",
+      "valor_ou_fato": "{\"valor\": 27491.5, \"variacao_percentual\": -0.8171585251461111, \"referencia\": \"intradiária\"}",
+      "data": "29/07/2026",
+      "horario": "13:11",
+      "instrumento": "NQ=F",
+      "fonte": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/quote/NQ=F"
+    },
+    {
+      "tipo": "cotacao",
+      "item": "Selic vigente",
+      "valor_ou_fato": "14.15% ao ano",
+      "data": "29/07/2026",
+      "horario": "13:11",
+      "instrumento": "BCB SGS 1178",
+      "fonte": "Banco Central do Brasil",
+      "url": "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1178/dados/ultimos/1?formato=json"
+    },
+    {
+      "tipo": "noticia",
+      "item": "Abertura | Bolsa deve abrir volátil, de olho em decisão de juros nos EUA, balanços e petróleo",
+      "valor_ou_fato": "Abertura | Bolsa deve abrir volátil, de olho em decisão de juros nos EUA, balanços e petróleo",
+      "data": "29/07/2026",
+      "horario": "09:39",
+      "instrumento": "notícia",
+      "fonte": "InvesTalk",
+      "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTFA0ZXZrdDJjVWhYVC03UXEtOG9yWjR0MXFaZFFZTlc5Uy1xbXdXU1RhaEZEanl0QjZpLW9zQUdlci1CYWZCc3c3dUtaeDFjVU9TNnhwU2pqdkt3V3VXelNwYU9nRjVEZWJqcUhRZ3hEQ1p2TGNoRWc?oc=5"
+    },
+    {
+      "tipo": "noticia",
+      "item": "Mercados hoje: decisão de juros nos EUA está no radar dos investidores",
+      "valor_ou_fato": "Mercados hoje: decisão de juros nos EUA está no radar dos investidores",
+      "data": "29/07/2026",
+      "horario": "09:33",
+      "instrumento": "notícia",
+      "fonte": "Bora Investir",
+      "url": "https://news.google.com/rss/articles/CBMiugFBVV95cUxNTXVJSlhORXMyQ0h1OEhLdjF1LVUwZzlQbm9JelJfOTVLb1pfTTJVNzQ3Y0tiS1d3X1VYZXJFQURyUjR0SVlWNGhzaDF2MDFRZVVYeTFVejFzVDlIdXdCU0hHU1NDdUgxcEFOdUFpMG5vQ1JwcWozZW5zQ3VrT3pVRGQxR3lkOEhwRFVZbFdBb3FldFJvSFcxams5MmdrQS1tOHFESU9Ia2FoV2FDWVZLNjVTa2pXOFJMb3c?oc=5"
+    },
+    {
+      "tipo": "noticia",
+      "item": "Ibovespa Hoje Ao Vivo: Bolsa abre em baixa e perde os 176 mil; mercados aguardam Fed",
+      "valor_ou_fato": "Ibovespa Hoje Ao Vivo: Bolsa abre em baixa e perde os 176 mil; mercados aguardam Fed",
+      "data": "29/07/2026",
+      "horario": "10:42",
+      "instrumento": "notícia",
+      "fonte": "InfoMoney",
+      "url": "https://news.google.com/rss/articles/CBMijwFBVV95cUxOcGZqREVUZno5OVNld2hqRzlMdW1Wa0N0T2FsSHpPMVU4TVE3S3dwWXBSbnZySC13QzVCNWx2T3lsVXZQcm5FMmVMcy1YMnZwdEFPWkt6NUFPNkc2ckY0Rmk3TlBWWVBiRTNxQnNDVE1ITHE4THl6UThBS0ViUHQ4bjhXdEV6bDZXOXNlQndmSQ?oc=5"
+    },
+    {
+      "tipo": "noticia",
+      "item": "Mercado aguarda manutenção dos juros pelo Fed; Ibovespa em dólar recua hoje (29)",
+      "valor_ou_fato": "Mercado aguarda manutenção dos juros pelo Fed; Ibovespa em dólar recua hoje (29)",
+      "data": "29/07/2026",
+      "horario": "07:06",
+      "instrumento": "notícia",
+      "fonte": "Money Times",
+      "url": "https://news.google.com/rss/articles/CBMirAFBVV95cUxOUUpHZ1pVcS1fYnNYbkcwNFVMZW1qRDVIb1M3R2puTnNCaTdqelcwTG1aUXZOY20tZEp6YnAxU3lDdDFFVzBUME5nSEctNEdFNERkSHFkTE1id1lZa0E5LXdwbzZYVnBtbXR0bFdldm5uSXJvZTRLVXBXbkFjNnFWOG9sQmNCTVVHUWZwUEtTZW9yNm1yc3BmaHViMXQ2SHRzcFM0d1BaLWViMUJi?oc=5"
+    },
+    {
+      "tipo": "noticia",
+      "item": "Ibovespa hoje: Fed domina e balanço do Santander e prévias da Petrobras medem o humor do mercado",
+      "valor_ou_fato": "Ibovespa hoje: Fed domina e balanço do Santander e prévias da Petrobras medem o humor do mercado",
+      "data": "29/07/2026",
+      "horario": "08:28",
+      "instrumento": "notícia",
+      "fonte": "Estadão",
+      "url": "https://news.google.com/rss/articles/CBMi0gFBVV95cUxPbzBnY1N2OEZaLWx3YVNELWo4bnlNMDViLUJpdjUzLWV2NC1pZEoxc3FCSE5FeXZUcUZJcGR3ZVZ3ZVZIeUxsbjBDbG50Z1dBOFlUVUtJUW5mcG9EOGVDZnFNQ2J1YlBqRFM4WjVrWnhDOVVYd0toLTN2VFVlRlVENXZDaG45ZHVKWVUzQlhfT2N2RzExVjdpeGIyT1FvbG5BQkxMSW1zMk5GXzltZkxTeEx6YjJfRnRaQnl3eUdVRV9ieldJTDBpRUR5T2ZISzdYZ0HSAdcBQVVfeXFMTzJUQ2RrRXBuc2ZRQWt0aW5iVDNjSWoySm1BLUxESGxTSmZUczRDRmVPSGFSclZxS3EtcHpxRnZpT0ppLUs0eWFpcnkxSTdxR1I3MV9raUlzWHdZT0pFaVNTZ1F1NWpubEFveHRPemU2Y1BYek96N1dKMU5GUjJwZGRzQVlPYzRhMmRGdHVwRXgtZ1QydlpSUUhMaXZMWEdBdXdCYm12UHZZQm1FSkZZLWtIYVdnXzJobllnc2RpOUdsb2ZZdDBEdUJnSFE4TUFEMDY0N0dSNWM?oc=5"
+    },
+    {
+      "tipo": "noticia",
+      "item": "Dólar oscila com nova escalada do petróleo e à espera de juros nos EUA",
+      "valor_ou_fato": "Dólar oscila com nova escalada do petróleo e à espera de juros nos EUA",
+      "data": "29/07/2026",
+      "horario": "09:55",
+      "instrumento": "notícia",
+      "fonte": "cnnbrasil.com.br",
+      "url": "https://news.google.com/rss/articles/CBMimgFBVV95cUxPa3czenFoWVZqUWE2TlJxdGJuRHVwanJkSFlWaE1MYnd2eV9yZHBsMWdlSDBrSUo1Vl9MS2YyalBTaXRXSzR4dmhDU3dIV1Q2Sm5rRGh6X2FHOWdsR0QtTFBoVEU4ZGVKSURMeFBndG9yNHdzbHFCOU42OG9zQUVKNlpubFY0T25rYmhFdC1lTDZBa1BWeDVJbW9n?oc=5"
+    },
+    {
+      "tipo": "noticia",
+      "item": "Dólar recua para R$ 5,12 e mercado acompanha decisão do Fed em meio a cenário de juros e bolsas em alta",
+      "valor_ou_fato": "Dólar recua para R$ 5,12 e mercado acompanha decisão do Fed em meio a cenário de juros e bolsas em alta",
+      "data": "29/07/2026",
+      "horario": "11:00",
+      "instrumento": "notícia",
+      "fonte": "Portal do Agronegócio",
+      "url": "https://news.google.com/rss/articles/CBMiigJBVV95cUxPX3I3Z1VGTkE5M3lPdTBmanR4N1Y2dGVzRXVndnlHUFBjb0VEVlZ1QVZpQ3JwUHpRWmhDUkRRQzRHYkR4S3hVR0dXOGpPMjZ1dTEyOFRzVFBHdEtGQTdibWZOekZYems4N18taDZqMXdEb0tONEZXd3JVVHQ0dERVN3RJUXFLR0V6N0k2UEkwcnRkbkxkRUlRSUJ2eWhyMWlHSmZncTFDVVNuOHBGRmluRUxJSm52ZGFIbnRuQTVGdW1CNVkwc1pFTXh3OXM0Vi10Q3FUd05WZlFLX3ViRDZic09INEdBNUNCZWt2QXlPc0VpeHVYcDFwN2g1NkFaOXozRHFzOFlVb1BEQQ?oc=5"
+    },
+    {
+      "tipo": "noticia",
+      "item": "Dólar e Ibovespa operam em queda, com foco em nova decisão de juros dos EUA",
+      "valor_ou_fato": "Dólar e Ibovespa operam em queda, com foco em nova decisão de juros dos EUA",
+      "data": "29/07/2026",
+      "horario": "10:49",
+      "instrumento": "notícia",
+      "fonte": "Expressão Rondônia",
+      "url": "https://news.google.com/rss/articles/CBMirAFBVV95cUxPQkhTVC14empYaV9vS1lqaGVLbDBGS1lBNkFJckFLY2locXJWdGFJNzBXdTR4RDd2ZFl3RkRXMHd0VnpCQjJwNnladFBMR1JYMHNXU0dHMHE4bTJ0ZEZWNEhnR3VDSjd6RVpxdTVfRC12dlprOVlOM25raEFkR0p5QUh1bTZnWE5CMmJIaEg1Y2p4cmc2QkpFV0tHaFhqN2RKQ1NEck5LMFl5VUMy?oc=5"
+    }
+  ]
+}
