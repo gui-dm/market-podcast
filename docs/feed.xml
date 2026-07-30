@@ -5,7 +5,7 @@
     <link>https://gui-dm.github.io/market-podcast</link>
     <language>pt-BR</language>
     <description>Podcasts privados de abertura e fechamento dos mercados brasileiro e internacional.</description>
-    <lastBuildDate>Thu, 30 Jul 2026 06:43:28 +0000</lastBuildDate>
+    <lastBuildDate>Thu, 30 Jul 2026 16:18:19 +0000</lastBuildDate>
     <itunes:author>Market Brief Brasil</itunes:author>
     <itunes:explicit>false</itunes:explicit>
     <itunes:image href="https://gui-dm.github.io/market-podcast/cover.png" />
@@ -16,6 +16,15 @@
       <pubDate>Thu, 30 Jul 2026 06:43:01 +0000</pubDate>
       <enclosure url="https://gui-dm.github.io/market-podcast/episodes/2026-07-30-fechamento.mp3" length="1518912" type="audio/mpeg" />
       <itunes:duration>253</itunes:duration>
+      <itunes:explicit>false</itunes:explicit>
+    </item>
+    <item>
+      <title>Abertura — 30/07/2026</title>
+      <description>Market Brief Brasil: edição de abertura.</description>
+      <guid>c1e96f8b-d440-5e47-89ba-9877d2c93f7c</guid>
+      <pubDate>Thu, 30 Jul 2026 16:17:47 +0000</pubDate>
+      <enclosure url="https://gui-dm.github.io/market-podcast/episodes/2026-07-30-abertura.mp3" length="1601856" type="audio/mpeg" />
+      <itunes:duration>266</itunes:duration>
       <itunes:explicit>false</itunes:explicit>
     </item>
     <item>
